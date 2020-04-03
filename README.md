@@ -1,7 +1,7 @@
 # The Archive of Graph Formalizations
 
 ## Description
-This informal `Archive of Graph Formalizations` collects different formalizations
+This informal `Archive of Graph Formalizations` collects different formalizations of graphs
 from the Isabelle/HOL universe to compare them and to eventually unify the efforts.
 
 ## Index
