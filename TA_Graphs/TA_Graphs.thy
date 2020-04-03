@@ -1,5 +1,5 @@
 (* Author: Simon Wimmer *)
-theory Graphs
+theory TA_Graphs
   imports
     More_List Stream_More
     "HOL-Library.Rewrite"

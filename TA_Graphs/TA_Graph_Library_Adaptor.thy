@@ -1,5 +1,5 @@
 section \<open>Transferring Theorems Between Graph Libraries\<close>
-theory Graph_Library_Adaptor
+theory TA_Graph_Library_Adaptor
   imports Graphs "../Graph_Theory/More_Graph_Theory"
 begin
 
