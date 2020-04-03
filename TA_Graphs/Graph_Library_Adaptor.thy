@@ -1,6 +1,6 @@
 section \<open>Transferring Theorems Between Graph Libraries\<close>
 theory Graph_Library_Adaptor
-  imports Graphs More_Graph_Theory
+  imports Graphs "../Graph_Theory/More_Graph_Theory"
 begin
 
 no_notation funcset (infixr "\<rightarrow>" 60)
