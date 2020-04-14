@@ -17,7 +17,7 @@ which is part of the AFP (https://www.isa-afp.org/entries/Graph_Theory.html)
 - `digraph` of Noschinski's [`Graph_Theory` library](https://www.isa-afp.org/entries/Graph_Theory.html) models general directed graphs as a set of vertices (`verts`) and a set of abstract `arcs` with a `tail` and a `head`. It allows multi-arcs. 
   - [`Arc_Walk`](https://www.isa-afp.org/browser_info/current/AFP/Graph_Theory/Arc_Walk.html) defines `awalk`, `apath`, `trail`, `cycle`
   - [`Vertex_Walk`](https://www.isa-afp.org/browser_info/current/AFP/Graph_Theory/Vertex_Walk.html) defines `vwalk`, `vpath`
-- `pair_digraph` of Lars Noschinski's [`Graph_Theory` library](https://www.isa-afp.org/entries/Graph_Theory.html) is a simpler representation of directed graphs by a set of vertices (`pverts`) and arcs by a relation `parcs`. (no multi-arcs!)
+- `pair_digraph` of Noschinski's [`Graph_Theory` library](https://www.isa-afp.org/entries/Graph_Theory.html) is a simpler representation of directed graphs by a set of vertices (`pverts`) and arcs by a relation `parcs`. (no multi-arcs!)
   - provides a conversion `with_proj` from `pair_digraph` to `digraph`
 - In [`Cava_Automata`](https://www.isa-afp.org/entries/CAVA_Automata.html) directed graphs ([`digraphs`](https://www.isa-afp.org/browser_info/current/AFP/CAVA_Automata/Digraph_Basic.html)) are defined as a set of tuples.
   - define paths `path`, 
@@ -25,9 +25,17 @@ which is part of the AFP (https://www.isa-afp.org/entries/Graph_Theory.html)
 - Wimmer defines directed graphs as a relation (`'v => 'v => bool`), see [TA_Graphs](https://github.com/wimmers/archive-of-graph-formalizations/blob/master/TA_Graphs/TA_Graphs.thy).
 - Zhan defines directed Graphs as [set of pairs](https://www.isa-afp.org/browser_info/current/AFP/Auto2_Imperative_HOL/Connectivity.html) (`(nat × nat) set`) for verifying an algorithm for connectivity. 
   - defines vertex paths (`is_path`), connectivity (`connected_rel`), 
-- [Koenigs lemma](https://www.isa-afp.org/browser_info/current/AFP/Coinductive/Koenigslemma.html) is proven on a directed graph formalized as adjacency matrix (`nat => nat => bool`).
+- [Koenigs lemma](https://www.isa-afp.org/browser_info/current/AFP/Coinductive/Koenigslemma.html) is proven by Lochbihler on a directed graph formalized as adjacency matrix (`nat => nat => bool`).
   - defines vertex paths (`paths`) as coinductive lists. 
-- [Containers](https://www.isa-afp.org/browser_info/current/AFP/Containers/Containers_DFS_Ex.html) define directed graphs as a set of pairs to verify a DFS algorithm.
+- [Containers](https://www.isa-afp.org/browser_info/current/AFP/Containers/Containers_DFS_Ex.html) by Lochbihler define directed graphs as a set of pairs to verify a DFS algorithm.
+- [InfPathElimination](https://www.isa-afp.org/entries/InfPathElimination.html) as [directed graphs](https://www.isa-afp.org/browser_info/current/AFP/InfPathElimination/Graph.html) as set of edges being essentially a pair.
+- for [Max-Flow-Min-Cut-Theorem](https://www.isa-afp.org/entries/MFMC_Countable.html) directed graphs are represented as an [adjacency matrix]((https://www.isa-afp.org/browser_info/current/AFP/MFMC_Countable/Max_Flow_Min_Cut_Countable.html)) (`'v => 'v => bool`). interesting: paths are defined over relations and `rtrancl_path`.
+- for [Menger's Theorem](https://www.isa-afp.org/entries/Menger.html) Dittmann defines [directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Menger/Graph.html) as a set of pairs.
+  - defines vertex paths (`walk`), distinct paths (`path`), `path_from_to`, 
+  - defines lenth of shortest path (`distance`)
+- for [`Tree_Decomposition`](https://www.isa-afp.org/entries/Tree_Decomposition.html) Dittmann defines [directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Tree_Decomposition/Graph.html)  as a set of pairs.
+  - code duplication with [graphs in Menger's Theorem](https://www.isa-afp.org/browser_info/current/AFP/Menger/Graph.html))
+  - further defines `cycle`
 
 
 ### Directed Weighted/Labeled Graphs
@@ -43,14 +51,6 @@ which is part of the AFP (https://www.isa-afp.org/entries/Graph_Theory.html)
 - For [Dijkstra](https://www.isa-afp.org/entries/Prim_Dijkstra_Simple.html) Nipkow and Lammich define [directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Prim_Dijkstra_Simple/Undirected_Graph.html) as an adjacency matrix (`('v * 'v) => enat`).
   - defines paths (`path`), distance (`δ`)
 - [Graph Saturation](https://www.isa-afp.org/entries/Graph_Saturation.html) has [labeled directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Graph_Saturation/LabeledGraphs.html)
-- [InfPathElimination](https://www.isa-afp.org/entries/InfPathElimination.html) as [directed graphs](https://www.isa-afp.org/browser_info/current/AFP/InfPathElimination/Graph.html) as set of edges being essentially a pair.
-- for [Max-Flow-Min-Cut-Theorem](https://www.isa-afp.org/entries/MFMC_Countable.html) directed graphs are represented as an [adjacency matrix]((https://www.isa-afp.org/browser_info/current/AFP/MFMC_Countable/Max_Flow_Min_Cut_Countable.html)) (`'v => 'v => bool`). interesting: paths are defined over relations and `rtrancl_path`.
-- for [Menger's Theorem](https://www.isa-afp.org/entries/Menger.html) Ditmann defines [directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Menger/Graph.html) as a set of pairs.
-  - defines vertex paths (`walk`), distinct paths (`path`), `path_from_to`, 
-  - defines lenth of shortest path (`distance`)
-- for [`Tree_Decomposition`](https://www.isa-afp.org/entries/Tree_Decomposition.html) Dittmann defines [directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Tree_Decomposition/Graph.html)  as a set of pairs.
-  - code duplication with [graphs in Menger's Theorem](https://www.isa-afp.org/browser_info/current/AFP/Menger/Graph.html))
-  - further defines `cycle`
 
 
 
