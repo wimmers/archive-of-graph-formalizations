@@ -51,6 +51,7 @@ which is part of the AFP (https://www.isa-afp.org/entries/Graph_Theory.html)
 - For [Dijkstra](https://www.isa-afp.org/entries/Prim_Dijkstra_Simple.html) Nipkow and Lammich define [directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Prim_Dijkstra_Simple/Undirected_Graph.html) as an adjacency matrix (`('v * 'v) => enat`).
   - defines paths (`path`), distance (`δ`)
 - [Graph Saturation](https://www.isa-afp.org/entries/Graph_Saturation.html) has [labeled directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Graph_Saturation/LabeledGraphs.html)
+- [Transition Systems and Automata](https://www.isa-afp.org/entries/Transition_Systems_and_Automata.html) has labeled transition systems and automata (`'a => 'q => 'q set`) aswell as design principles for a generic library with many different concrete representations.
 
 
 
