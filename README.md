@@ -70,5 +70,9 @@ which is part of the AFP (https://www.isa-afp.org/entries/Graph_Theory.html)
   - defines paths (`path`), simple paths (`simple`)
   - defines cycle freedom (`cycle_free`), connectedness (`connected`), `tree`, `is_spanning_tree`
   - adds weight function (`w :: 'v set => nat`), then defines `is_MST`
+- in [Koenigsberg_Friendship](https://www.isa-afp.org/entries/Koenigsberg_Friendship.html) uses the directed graph from  [`Dijkstra_Shortest_Path`](https://www.isa-afp.org/browser_info/current/AFP/Dijkstra_Shortest_Path/Graph.html) and define [undirected multigraphs](https://www.isa-afp.org/browser_info/current/AFP/Koenigsberg_Friendship/MoreGraph.html) (`valid_unMultigraph`) 
+  - they define trails (`is_trail`), connectivity (`connected`), remove undirected path (`rem_unPath`)
+  - Eulerian trails (`is_Eulerian_trail`), Eulerian circuits (`is_Eulerian_circuit`)
+  - `euclerian_cycle_ex`, `euclerian_path_ex`, `eulerian_sufficient`
 - TODO: Abdulaziz undirected Graphs in Blossom Algorithm
 
