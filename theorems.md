@@ -3,11 +3,11 @@
 This provides a list of essential theorems on graphs whose proofs should be compared among different representations.
 Pointers to existing formalizations should be added.
 
-## DAGs
+## Digraphs
 - The strongly connected components of any graph form a DAG
 - Any DAG has a topological numbering
 
-## Undirected
+## Undirected graphs
 - Connectivity is an equivalence relation
 - Characterizations of a spanning tree: "minimal connected", "maximal cycle-free"
 - In a connected graph there exists a (minimum) spanning tree 
