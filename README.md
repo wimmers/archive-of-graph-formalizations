@@ -19,6 +19,9 @@ which is part of the AFP (https://www.isa-afp.org/entries/Graph_Theory.html)
   - [`Vertex_Walk`](https://www.isa-afp.org/browser_info/current/AFP/Graph_Theory/Vertex_Walk.html) defines `vwalk`, `vpath`
 - `pair_digraph` of Noschinski's [`Graph_Theory` library](https://www.isa-afp.org/entries/Graph_Theory.html) is a simpler representation of directed graphs by a set of vertices (`pverts`) and arcs by a relation `parcs`. (no multi-arcs!)
   - provides a conversion `with_proj` from `pair_digraph` to `digraph`
+- Lukas:
+  - Extended Noschinski's theory with trees and shortest path trees and some theorems about these concepts.
+  - Proves triangle ineq for weighted digraphs and how to compute a dominating set
 - In [`Cava_Automata`](https://www.isa-afp.org/entries/CAVA_Automata.html) directed graphs ([`digraphs`](https://www.isa-afp.org/browser_info/current/AFP/CAVA_Automata/Digraph_Basic.html)) are defined as a set of tuples.
   - define paths `path`, 
   - is used by [`Gabow_SCC`](https://www.isa-afp.org/entries/Gabow_SCC.html), [`DFS_Framework`](https://www.isa-afp.org/entries/DFS_Framework.html), [`Formal_SSA`](https://www.isa-afp.org/browser_info/current/AFP/Formal_SSA/Graph_path.html) ...
@@ -36,6 +39,8 @@ which is part of the AFP (https://www.isa-afp.org/entries/Graph_Theory.html)
 - for [`Tree_Decomposition`](https://www.isa-afp.org/entries/Tree_Decomposition.html) Dittmann defines [directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Tree_Decomposition/Graph.html)  as a set of pairs.
   - code duplication with [graphs in Menger's Theorem](https://www.isa-afp.org/browser_info/current/AFP/Menger/Graph.html))
   - further defines `cycle`
+- Mohammad:
+  - A digraph is a set of pairs of vertices. The digraph's vertices are the union of vertices on which there are incident edges.
 
 
 ### Directed Weighted/Labeled Graphs
@@ -52,8 +57,6 @@ which is part of the AFP (https://www.isa-afp.org/entries/Graph_Theory.html)
   - defines paths (`path`), distance (`δ`)
 - [Graph Saturation](https://www.isa-afp.org/entries/Graph_Saturation.html) has [labeled directed graphs](https://www.isa-afp.org/browser_info/current/AFP/Graph_Saturation/LabeledGraphs.html)
 - [Transition Systems and Automata](https://www.isa-afp.org/entries/Transition_Systems_and_Automata.html) has labeled transition systems and automata (`'a => 'q => 'q set`) aswell as design principles for a generic library with many different concrete representations.
-
-
 
 ### Undirected Graphs
 - In Noschinski's [`Graph_Theory` library](https://www.isa-afp.org/entries/Graph_Theory.html) `graph` model undirected graphs as symmetric `digraphs`
@@ -75,5 +78,13 @@ which is part of the AFP (https://www.isa-afp.org/entries/Graph_Theory.html)
   - they define trails (`is_trail`), connectivity (`connected`), remove undirected path (`rem_unPath`)
   - Eulerian trails (`is_Eulerian_trail`), Eulerian circuits (`is_Eulerian_circuit`)
   - `euclerian_cycle_ex`, `euclerian_path_ex`, `eulerian_sufficient`
-- TODO: Abdulaziz undirected Graphs in Blossom Algorithm
-
+- Abdulaziz graphs in Blossom Algorithm:
+  - A graph is a set of edges, each of which is a set of vertices.
+  - A theory regarding connected components is defined in terms of edges and vertices, and their connection is developed.
+  - An induction principle is defined on connected components.
+  - Contraction operation is defined and some theory for that is developed.
+  - A lot of theory about matchings, forest construction, odd set covers. Has a proof of Berge's lemma. Necessary for any efficient matching algorithm.
+- Krebs graphs for diameter approximation algorithms
+  - Based on Abdulaziz. Difference: a graph is defined wrt a set of vertices.
+  - Extended with edges with enat weights.
+  - Theory about paths, walks, costs, shortest paths, trees, BFS trees, neighbourhoods, triangle inequality, dominating sets. It was used to cleanly formalise/verify an algorithm that does vertex contraction.
