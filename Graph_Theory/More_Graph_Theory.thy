@@ -133,4 +133,74 @@ lemmas scc_digraphI = scc_digraph.fin_dag_axioms
 
 end
 
+subsection \<open>Helper lemmas for directed tree\<close>
+
+lemma (in wf_digraph) awalk_not_distinct:
+  assumes "finite (verts G)" and "awalk u p v" and "length p \<ge> card (verts G)"
+  shows "\<not> distinct (awalk_verts u p)"
+proof -
+  have *: "length (awalk_verts u p) > length p"
+    by (induction p arbitrary: u) auto
+
+  show ?thesis
+  proof(cases "length p = 0")
+    case True
+    with assms show ?thesis unfolding awalk_def by simp
+  next
+    case False
+    with assms * have "length (awalk_verts u p) > card (verts G)"
+      by auto
+    moreover
+    have "set (awalk_verts u p) \<subseteq> verts G" using assms(2) by blast
+    ultimately show ?thesis using assms(1) 
+      by (induction p arbitrary: u)
+         (auto, metis card_subset_eq distinct_card less_antisym)
+  qed
+qed
+
+lemma (in wf_digraph) awalk_del_vert:
+  "\<lbrakk> awalk u p v; x \<notin> set (awalk_verts u p) \<rbrakk> \<Longrightarrow> pre_digraph.awalk (del_vert x) u p v"
+proof(induction p arbitrary: u)
+  case Nil
+  then have "set (awalk_verts u []) = {u}" by auto
+  with Nil have "x \<noteq> u" by simp
+  moreover
+  from Nil have "u = v" unfolding awalk_def by auto
+  ultimately show ?case using Nil
+    by (simp add: awalk_hd_in_verts pre_digraph.verts_del_vert
+        wf_digraph.awalk_Nil_iff wf_digraph_del_vert)
+next
+  case (Cons a p)
+  then obtain u' where u': "pre_digraph.awalk (del_vert x) u' p v"
+    using awalk_Cons_iff by auto
+  moreover
+  from Cons.prems have "head G a \<noteq> x"
+    using hd_in_awalk_verts(1) awalk_Cons_iff by auto
+  ultimately show ?case using Cons
+    by (auto simp: awalk_Cons_iff head_del_vert pre_digraph.del_vert_simps(2)
+        tail_del_vert wf_digraph.awalk_Cons_iff wf_digraph_del_vert)
+qed
+
+
+text \<open>This is an alternative formulation of @{thm pre_digraph.arcs_del_vert}.\<close>
+lemma (in pre_digraph) arcs_del_vert2:
+  "arcs (del_vert v) = arcs G - in_arcs G v - out_arcs G v"
+  using arcs_del_vert by force
+
+
+lemma (in wf_digraph) sp_non_neg_if_w_non_neg:
+  assumes w_non_neg: "\<forall>e \<in> arcs G. w e \<ge> 0"
+  shows "\<mu> w u v \<ge> 0"
+proof(cases "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v")
+  case True
+  have *: "awalk u p v \<Longrightarrow> awalk_cost w p \<ge> 0" for p
+    by (simp add: pos_cost_pos_awalk_cost w_non_neg)
+  then show ?thesis unfolding \<mu>_def
+    by (metis (mono_tags, lifting) INF_less_iff ereal_less_eq(5) mem_Collect_eq not_less)
+next
+  case False
+  then show ?thesis by (simp add: shortest_path_inf)
+qed
+
+
 end
