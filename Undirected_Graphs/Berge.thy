@@ -1559,8 +1559,6 @@ lemma in_con_comp_has_walk: assumes "v \<in> connected_component E u" "v \<noteq
 lemma con_comp_subset: "E1 \<subseteq> E2 \<Longrightarrow> connected_component E1 u \<subseteq> connected_component E2 u"
   by (auto dest: walk_subset simp: connected_component_def)
 
-find_theorems "_ \<in> insert _ _"
-
 lemma in_con_comp_insert: "v \<in> connected_component (insert {u, v} E) u"
   using edges_are_walks[OF insertI1]
   by (force simp add: connected_component_def)
@@ -1681,6 +1679,11 @@ proof(rule ccontr)
     by metis
   then show False using assms(4) by simp
 qed
+
+(*
+  The proof of the following theorem should be improved by devising an induction principle for
+  edges and connected components.
+*)
 
 theorem component_has_path_distinct:
   assumes "finite E" and
