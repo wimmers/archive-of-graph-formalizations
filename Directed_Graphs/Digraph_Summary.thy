@@ -59,10 +59,11 @@ text \<open>TODO\<close>
 
 section \<open>Reachability\<close>
 
-text \<open>@{term "(u,v) \<in> arcs_ends G"} iff there is an arc from \<open>u\<close> to \<open>v\<close>.
-      @{term reachable} and @{term reachable1} capture reachability, and
-       reachabilty over at least one arc. They are defined by the reflexiv
-       transitive closure, respectively the transitive closure of @{term arcs_ends}.\<close>
+text \<open>
+  We have@{term "(u,v) \<in> arcs_ends G"} iff there is an arc from \<open>u\<close> to \<open>v\<close>.
+  The predicates @{term reachable} and @{term reachable1} capture reachability, and
+  reachability over at least one arc. They are defined by the reflexive
+  transitive closure, respectively the transitive closure of @{term arcs_ends}.\<close>
 
 subsection \<open>Reachability with paths\<close>
 
@@ -73,7 +74,7 @@ thm reachable_awalk
 section \<open>Subgraphs and various graph properties\<close>
 
 
-subsection \<open>subgraphs\<close>
+subsection \<open>Subgraphs\<close>
 
 thm subgraph_def
 thm spanning_def
@@ -124,18 +125,21 @@ thm dag.topological_numbering
 
 subsubsection \<open>Strongly Connected Components\<close>
 
-thm strongly_connected_def
+thm strongly_connected_def \<comment> \<open>Q: why does the graph have to be non-empty to be strongly connected?\<close>
 thm sccs_def sccs_altdef2
 thm sccs_verts_def sccs_verts_conv
 
 text \<open>The graph of strongly connected components forms a DAG/has a topological ordering.\<close>
 
 thm scc_num_topological
+\<comment> \<open>
+  This theorem exists because has because it has been transferred
+  from the \<open>TA_Graph\<close> library. But it should be re-proved for better comparison.\<close>
 
 thm scc_digraphI
 
 lemma "forest scc_graph" 
-  oops
+  sorry
 
 
 subsection \<open>The underlying undirected/symmetric graph of a digraph\<close>
@@ -144,7 +148,7 @@ thm mk_symmetric_def
 
 thm reachable_mk_symmetric_eq
 
-text \<open>a graph \<open>G\<close> is @{term connected}, if its underlying undirected graph 
+text \<open>A graph \<open>G\<close> is @{term connected} if its underlying undirected graph 
       (i.e. symmetric graph) is @{term strongly_connected}\<close>
 
 thm tree_def
@@ -162,7 +166,7 @@ lemma cycle_of_indegree_ge_1_:
   shows "\<not> forest G"
   sorry      
 
-text \<open>Characterization of euler_trails:\<close>
+text \<open>Characterization of Euler trails:\<close>
 
 thm closed_euler
 thm open_euler
@@ -175,10 +179,10 @@ thm directed_tree_def
                      
 thm directed_tree.finite_directed_tree_induct \<comment> \<open>an induction rule\<close>
                             
-section \<open>An BFS algorithm for finding a rooted directed tree.\<close>
+section \<open>A BFS algorithm for finding a rooted directed tree.\<close>
 
 
-section \<open>An DFS algorithm finding a rooted directed tree.\<close>
+section \<open>A DFS algorithm finding a rooted directed tree and computing DFS numberings.\<close>
 
 
 section \<open>An algorithm for finding the SCCs.\<close>
