@@ -6,6 +6,7 @@ Pointers to existing formalizations should be added.
 ## Digraphs
 - The strongly connected components of any graph form a DAG
 - Any DAG has a topological numbering
+- If every node has at least indegree one, then there is a cycle
 
 ## Undirected graphs
 - Connectivity is an equivalence relation
