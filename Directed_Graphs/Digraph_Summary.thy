@@ -112,8 +112,10 @@ thm subgraph_apath_imp_apath[OF _ subgraph_del_arc]
 
 
 subsection \<open>Graph properties\<close>
-
-thm forest_def \<comment> \<open>aka cycle free aka DAG\<close>
+text \<open>aka cycle free aka DAG. Note that this definition should be renamed to something more
+  appropriate such as dag since there is no reasonable definition of forests in a general digraph.
+  Forests and trees should only be defined in @{locale sym_digraph}}.\<close>
+thm forest_def
 
 text \<open>Every DAG has a topological numbering:\<close>
 
