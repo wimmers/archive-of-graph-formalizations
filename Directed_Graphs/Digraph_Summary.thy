@@ -122,6 +122,9 @@ lemma (in -) forest_dag_conv: "forest G = dag G"
   oops
 
 thm dag.topological_numbering
+\<comment> \<open>
+  This theorem exists because has because it has been transferred
+  from the \<open>TA_Graph\<close> library. But it should be re-proved for better comparison.\<close>
 
 subsubsection \<open>Strongly Connected Components\<close>
 
@@ -131,10 +134,7 @@ thm sccs_verts_def sccs_verts_conv
 
 text \<open>The graph of strongly connected components forms a DAG/has a topological ordering.\<close>
 
-thm scc_num_topological
-\<comment> \<open>
-  This theorem exists because has because it has been transferred
-  from the \<open>TA_Graph\<close> library. But it should be re-proved for better comparison.\<close>
+thm scc_num_topological \<comment> \<open>See note for @{thm dag.topological_numbering} above\<close>
 
 thm scc_digraphI
 
