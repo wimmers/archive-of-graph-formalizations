@@ -1549,7 +1549,7 @@ lemma connected_components_insert_1:
   using assms connected_components_insert_2 by fastforce
 
 lemma in_connected_component_in_edges: "v \<in> connected_component E u \<Longrightarrow> v \<in> Vs E \<or> u = v"
-  by (fastforce simp: connected_component_def Vs_def elim: vs_member_elim dest: walk_endpoints(2))
+  by(auto simp: connected_component_def Vs_def dest: walk_endpoints(2) elim: vs_member_elim)
 
 lemma in_con_comp_has_walk: assumes "v \<in> connected_component E u" "v \<noteq> u"
   obtains p where "walk_betw E u p v"
@@ -1572,15 +1572,17 @@ proof-
   proof(standard, goal_cases)
     case 1
     thus ?case
+      apply auto
       using assms
-      by (fastforce elim!: in_con_comp_has_walk dest!: path_can_be_split_2
+      by (fastforce elim: in_con_comp_has_walk dest!: path_can_be_split_2
                     simp add: in_con_compI connected_comp_verts_in_verts)
   next
     case 2
     have "C = connected_component E u"
       by (simp add: assms connected_components_closed')
     then show ?case
-      by(auto intro!: insert_subsetI con_comp_subset[simplified] simp add: in_con_comp_insert)
+      by(auto intro!: insert_subsetI con_comp_subset[simplified]
+              simp add: in_con_comp_insert)
   qed
   ultimately show ?thesis by (metis connected_components_closed' own_connected_component_unique)
 qed
