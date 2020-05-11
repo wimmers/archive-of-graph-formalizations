@@ -1,7 +1,7 @@
-theory DDFS_Ports
+theory Berge_to_DDFS
   imports 
     "../DDFS"
-    "../Undirected_Graphs/summary1"
+    "../Undirected_Graphs/Berge"
 begin
 
 term edges_of_path
@@ -280,25 +280,29 @@ lemma nonempty_dpath_dpath_bet[intro?]:
   assumes "dpath E p" "p \<noteq> []" "hd p = u" "last p = v"
   shows "dpath_bet E p u v"
   using assms
+  unfolding dpath_bet_def
   by blast
 
 thm walk_nonempty
 lemma dpath_bet_nonempty:
   assumes "dpath_bet E p u v"
   shows [simp]: "p \<noteq> []"
-  using assms by blast
+  using assms 
+  unfolding dpath_bet_def by blast
 
 thm walk_between_nonempty_path
 lemma dpath_bet_nonempty_dpath[elim]:
   assumes "dpath_bet E p u v"
   shows "dpath E p" "p \<noteq> []" "hd p = u" "last p = v"
-  using assms by blast+
+  using assms 
+  unfolding dpath_bet_def by blast+
 
 thm walk_reflexive
 lemma dpath_bet_reflexive:
   assumes "w \<in> dVs E"
   shows "dpath_bet E [w] w w"
-  using assms by simp
+  using assms 
+  unfolding dpath_bet_def by simp
 
 thm walk_symmetric \<comment> \<open>only for undirected/symmetric graphs\<close>
 
@@ -306,44 +310,44 @@ thm walk_transitive
 lemma dpath_bet_transitive:
   assumes "dpath_bet E p u v" "dpath_bet E q v w"
   shows "dpath_bet E (p @ tl q) u w"
-  using assms dpath_concat append_is_Nil_conv
-  by (metis append_Nil2 append_butlast_last_id hd_Cons_tl hd_append2 last_appendR last_tl)
+  using assms
+  unfolding dpath_bet_def
+  by (metis append_Nil2 append_butlast_last_id append_is_Nil_conv dpath_concat hd_Cons_tl hd_append2 last_appendR last_tl)
 
 thm walk_in_Vs
 lemma dpath_bet_in_dVs:
   assumes "dpath_bet E p a b"
   shows "set p \<subseteq> dVs E"
-  using assms path_then_in_Vs by fast
+  using assms path_then_in_Vs
+  unfolding dpath_bet_def by fast
 
 thm walk_endpoints
 lemma dpath_bet_endpoints:
   assumes "dpath_bet E p u v"
   shows [simp]: "u \<in> dVs E"
   and   [simp]: "v \<in> dVs E"
-  using assms path_then_in_Vs by fastforce+
+  using assms path_then_in_Vs
+  unfolding dpath_bet_def by fastforce+
 
 thm walk_pref
 lemma dpath_bet_pref:
   assumes "dpath_bet E (pr @ [x] @ su) u v"
   shows "dpath_bet E (pr @ [x]) u x"
-proof
-  show "dpath E (pr @ [x])" using assms append_dpath_pref
-    by (metis (full_types) append_eq_appendI)
-  show "pr @ [x] \<noteq> [] \<and> hd (pr @ [x]) = u \<and> last (pr @ [x]) = x" using assms
-    by (metis \<open>dpath E (pr @ [x])\<close> hd_append snoc_eq_iff_butlast split_dpath)
-qed
+  by (metis append.assoc append_dpath_pref assms dpath_bet_def hd_append2 snoc_eq_iff_butlast)
 
 thm walk_suff
 lemma dpath_bet_suff:
   assumes "dpath_bet E (pr @ [x] @ su) u v"
   shows "dpath_bet E (x # su) x v"
-  using append_dpath_suff assms by auto
+  using append_dpath_suff assms 
+  unfolding dpath_bet_def by auto
 
 thm edges_are_walks
 lemma edges_are_dpath_bet:
   assumes "(v, w) \<in> E"
   shows "dpath_bet E [v, w] v w"
   using assms dVsI1
+  unfolding dpath_bet_def
   by (metis append_butlast_last_id butlast.simps(2) dpath1 dpath_snoc_edge' last.simps list.sel(1) list.simps(3))
 
 thm walk_subset
@@ -351,7 +355,8 @@ lemma dpath_bet_subset:
   assumes "E \<subseteq> E'"
   assumes "dpath_bet E p u v"
   shows "dpath_bet E' p u v"
-  using assms dpath_subset by blast
+  using assms dpath_subset 
+  unfolding dpath_bet_def by blast
 
 thm induct_walk_betw
 lemma induct_dpath_bet[case_names path1 path2, consumes 1, induct set: dpath_bet]:
@@ -366,11 +371,15 @@ proof -
     case dpath0
     then show ?case by simp
   next
-    case (dpath1 v dG) \<comment> \<open>how to get \<^term>\<open>dG\<close> "unfixed"?\<close>
-    then show ?case using Path1 sorry
+    case dpath1
+    then show ?case using Path1 by fastforce
   next
-    case (dpath2 v v' dG vs)
-    then show ?case sorry
+    case (dpath2 v v' vs a b)
+    then have "dpath_bet E (v' # vs) v' b"
+      by (simp add: dpath2.hyps(1) dpath_bet_def)
+    then show ?case using dpath2 Path2
+      by auto
   qed
 qed
+
 end

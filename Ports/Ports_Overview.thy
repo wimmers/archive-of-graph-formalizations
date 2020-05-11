@@ -1,14 +1,14 @@
 theory Ports_Overview
   imports
     "../Undirected_Graphs/summary1"
-    DDFS_Ports
+    Berge_to_DDFS
 begin
 
 text \<open>Vertex set\<close>
 thm Vs_def \<comment> \<open>Berge\<close>
 thm dVs_def \<comment> \<open>DDFS\<close>
 
-text \<open>Path\<close>
+text \<open>Path (vertex walks)\<close>
 term path \<comment> \<open>Berge\<close>
 term dpath \<comment> \<open>DDFS\<close>
 
