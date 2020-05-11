@@ -121,7 +121,7 @@ lemma dpath_concat:
   by (induction) (simp_all add: tl_dpath_is_dpath)
 
 thm path_append
-thm append_dpath \<comment> \<open>slightly weaker\<close>
+thm append_dpath
 
 thm edges_of_path_append_2
 lemma edges_of_dpath_append_2:
@@ -265,6 +265,12 @@ proof (induction p arbitrary: v)
       using Cons.IH by fastforce
   qed
 qed simp
+
+thm edges_of_path_append_subset
+lemma edges_of_dpath_append_subset:
+  shows "set (edges_of_dpath p') \<subseteq> set (edges_of_dpath (p @ p'))"
+  using edges_of_dpath_append
+  by (metis eq_iff le_supE set_append)
 
 thm walk_betw_def
 term dpath_bet
