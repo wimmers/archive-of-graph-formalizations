@@ -61,7 +61,7 @@ lemma append_dpath_pref: "dpath dG (p1 @ p2) \<Longrightarrow> dpath dG p1"
 lemma append_dpath_suff: "dpath dG (p1 @ p2) \<Longrightarrow> dpath dG p2"
   by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp:)+
 
-lemma append_dpath: "dpath dG p1 \<Longrightarrow> dpath dG p2 \<Longrightarrow> (last p1, hd p2) \<in> dG \<Longrightarrow> dpath dG (p1 @ p2)"
+lemma append_dpath: "dpath dG p1 \<Longrightarrow> dpath dG p2 \<Longrightarrow> (p1 \<noteq> [] \<Longrightarrow> p2 \<noteq> [] \<Longrightarrow> (last p1, hd p2) \<in> dG) \<Longrightarrow> dpath dG (p1 @ p2)"
   by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp: dVsI1)+
 
 lemma split_dpath:
