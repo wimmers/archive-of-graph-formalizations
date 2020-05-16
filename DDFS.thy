@@ -50,21 +50,21 @@ lemma induct_pcpl_2:
   "\<lbrakk>P []; \<And>x. P [x]; \<And>x y. P [x,y]; \<And>x y z. P [x,y,z]; \<And>w x y z zs. P zs \<Longrightarrow> P (w # x # y # z # zs)\<rbrakk> \<Longrightarrow> P xs"
   by induction_schema (pat_completeness, lexicographic_order)
 
-lemma dVsI1:
-  assumes "(a, v) \<in> dG" shows "a \<in> dVs dG"
+lemma dVsI:
+  assumes "(a, v) \<in> dG" shows "a \<in> dVs dG" and "v \<in> dVs dG"
   using assms unfolding dVs_def by auto
 
 lemma append_dpath_1: "dpath dG (p1 @ p2) \<Longrightarrow> dpath dG p1"
-  by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp: dVsI1)+
+  by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp: dVsI)+
 
 lemma append_dpath_pref: "dpath dG (p1 @ p2) \<Longrightarrow> dpath dG p1"
-  by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp: dVsI1)+
+  by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp: dVsI)+
 
 lemma append_dpath_suff: "dpath dG (p1 @ p2) \<Longrightarrow> dpath dG p2"
   by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp:)+
 
 lemma append_dpath: "dpath dG p1 \<Longrightarrow> dpath dG p2 \<Longrightarrow> (p1 \<noteq> [] \<Longrightarrow> p2 \<noteq> [] \<Longrightarrow> (last p1, hd p2) \<in> dG) \<Longrightarrow> dpath dG (p1 @ p2)"
-  by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp: dVsI1)+
+  by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp: dVsI)+
 
 lemma split_dpath:
   "dpath_bet dG (p1 @ v2 # p2) v1 v3 \<Longrightarrow> dpath_bet dG (v2 # p2) v2 v3"
