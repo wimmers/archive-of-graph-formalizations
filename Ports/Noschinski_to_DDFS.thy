@@ -2,6 +2,7 @@ theory Noschinski_to_DDFS
   imports 
     "../DDFS"
     "../Directed_Graphs/Digraph_Summary"
+    Berge_to_DDFS
 begin
 
 section \<open>Theorems from Digraph_Summary (Noschinski)\<close>
@@ -81,9 +82,28 @@ lemma awalkE[elim]:
     "awhd u p = u" "awlast u p = v"
   using assms by (auto simp: awalk_conv)
 
+lemma awalk_Nil_iff:
+  "awalk E u [] v \<longleftrightarrow> u = v \<and> u \<in> dVs E"
+  unfolding awalk_def by auto
+
 lemma hd_in_awalk_verts:
   "awalk E u p v \<Longrightarrow> u \<in> set (awalk_verts u p)"
   by (cases p) auto
+
+lemma awalk_Cons_iff:
+  shows "awalk E u ((t, h) # es) w \<longleftrightarrow> (t, h) \<in> E \<and> u = t \<and> awalk E h es w" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume asm: "?L"
+  then have "(t, h) \<in> E" by auto
+  moreover from asm have "u = t" by auto
+  moreover from asm have "awalk E h es w" using awalk_def dVsI(2) by fastforce
+  ultimately show "?R" by auto
+next
+  assume asm: "?R"
+  then show "?L" using awalk_def dVsI(1) by fastforce
+qed
+
+lemmas awalk_simps = awalk_Nil_iff awalk_Cons_iff
 
 lemma awalkI_apath:
   assumes "apath E u p v" shows "awalk E u p v"
@@ -130,6 +150,12 @@ proof -
     using assms by (auto simp: hd_in_awalk_verts elim: awalkE)
   then show ?thesis using assms by (auto elim: awalkE intro: that)
 qed
+
+lemma awalk_appendI:
+  assumes "awalk E u p v"
+  assumes "awalk E v q w"
+  shows "awalk E u (p @ q) w"
+  using assms by auto
 
 lemma cas_takeI:
   assumes "cas u p v" "awlast u (take n p) = v'"
@@ -336,5 +362,11 @@ next
   then show ?case using step_awalk_to_apath[of _ _ p _ q r s] by simp
 qed
 
+text \<open>Vertex walks\<close>
+lemma "awalk_imp_dpath":
+  assumes "awalk E u p v" shows "dpath E (awalk_verts u p)"
+  using assms
+  by (induction p arbitrary: u rule: edges_of_dpath.induct)
+     (auto simp: awalk_simps)
 
 end

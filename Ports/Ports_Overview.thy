@@ -2,6 +2,8 @@ theory Ports_Overview
   imports
     "../Undirected_Graphs/summary1"
     Berge_to_DDFS
+    "../Directed_Graphs/Digraph_Summary"
+    Noschinski_to_DDFS
 begin
 
 text \<open>Vertex set\<close>
@@ -157,4 +159,25 @@ thm dpath_bet_subset \<comment> \<open>DDFS\<close>
 
 thm induct_walk_betw \<comment> \<open>Berge\<close>
 thm induct_dpath_bet \<comment> \<open>DDFS\<close>
+
+text \<open>Noschinski -- arc walks, trails, paths\<close>
+thm pre_digraph.awalkI_apath \<comment> \<open>Noschinski\<close>
+thm Noschinski_to_DDFS.awalkI_apath \<comment> \<open>DDFS\<close>
+
+thm wf_digraph.apath_awalk_to_apath \<comment> \<open>Noschinski\<close>
+thm apath_awalk_to_apath \<comment> \<open>DDFS\<close>
+
+thm wf_digraph.awalk_to_apath_induct \<comment> \<open>Noschinski\<close>
+thm awalk_to_apath_induct \<comment> \<open>DDFS\<close>
+
+thm wf_digraph.awalk_appendI \<comment> \<open>Noschinski\<close>
+thm awalk_appendI \<comment> \<open>DDFS\<close>
+
+thm wf_digraph.awalk_append_iff \<comment> \<open>Noschinski\<close>
+thm awalk_append_iff \<comment> \<open>DDFS\<close>
+
+text \<open>Noschinski -- vertex walks\<close>
+thm wf_digraph.awalk_imp_vwalk \<comment> \<open>Noschinski\<close>
+thm awalk_imp_dpath \<comment> \<open>DDFS\<close>
+
 end
