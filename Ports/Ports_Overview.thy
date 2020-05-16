@@ -30,7 +30,7 @@ thm edges_of_path_for_inner \<comment> \<open>Berge\<close>
 thm edges_of_dpath_for_inner edges_of_dpath_for_inner' \<comment> \<open>DDFS\<close>
 
 thm Berge.hd_edges_neq_last \<comment> \<open>Berge\<close>
-thm DDFS_Ports.hd_edges_neq_last \<comment> \<open>DDFS\<close>
+thm Berge_to_DDFS.hd_edges_neq_last \<comment> \<open>DDFS\<close>
 
 thm path_edges_of_path_refl \<comment> \<open>Berge\<close>
 thm dpath_edges_of_dpath_refl \<comment> \<open>DDFS\<close>
@@ -110,7 +110,7 @@ thm hd_v_in_hd_e \<comment> \<open>Berge\<close>
 thm hd_v_fst_hd_e \<comment> \<open>DDFS\<close>
 
 thm Berge.last_in_edge \<comment> \<open>Berge\<close>
-thm DDFS_Ports.last_in_edge \<comment> \<open>DDFS\<close>
+thm Berge_to_DDFS.last_in_edge \<comment> \<open>DDFS\<close>
 
 thm edges_of_path_append_subset \<comment> \<open>Berge\<close>
 thm edges_of_dpath_append_subset \<comment> \<open>DDFS\<close>
