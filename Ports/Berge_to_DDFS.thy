@@ -20,11 +20,11 @@ lemma edges_of_dpath_index:
   "Suc i < length p \<Longrightarrow> edges_of_dpath p ! i = (p ! i, p ! Suc i)"
 proof (induction i arbitrary: p)
   case 0
-  then obtain u v ps where "p = u#v#ps" by (metis Suc_leI Suc_le_length_iff)
+  then obtain u v ps where "p = u#v#ps" by (auto dest!: Suc_leI simp: Suc_le_length_iff)
   then show ?case by simp
 next
   case (Suc i)
-  then obtain u v ps where "p = u#v#ps" by (metis Suc_leI Suc_le_length_iff)
+  then obtain u v ps where "p = u#v#ps" by (auto dest!: Suc_leI simp: Suc_le_length_iff)
   hence "edges_of_dpath (v#ps) ! i = ((v#ps) ! i, (v#ps) ! Suc i)" using Suc.IH Suc.prems by simp
   then show ?case using \<open>p = u#v#ps\<close> by simp
 qed
@@ -44,7 +44,7 @@ lemma edges_of_dpath_for_inner:
 
 text \<open>For an incoming edge we need an additional assumption (\<^term>\<open>i > 0\<close>).\<close>
 lemma edges_of_dpath_for_inner':
-  assumes "v = p ! (Suc i)" "Suc (Suc i) < length p"
+  assumes "v = p ! (Suc i)" "Suc i < length p"
   obtains u where "(u, v) = edges_of_dpath p ! i"
   using assms by (simp add: edges_of_dpath_index)
 
@@ -142,6 +142,9 @@ next
   case Cons thus ?thesis using edges_of_dpath_append_2 by blast
 qed
 
+lemma append_butlast_last_assoc: "p \<noteq> [] \<Longrightarrow> butlast p @ last p # p' = p @ p'"
+  by (induction p) auto
+
 thm edges_of_path_append_3
 lemma edges_of_dpath_append_3:
   assumes "p \<noteq> []"
@@ -149,7 +152,7 @@ lemma edges_of_dpath_append_3:
 proof -
   from assms
   have "edges_of_dpath (p @ p') = edges_of_dpath (butlast p @ last p # p')"
-    by (metis append_Cons append_Nil append_assoc snoc_eq_iff_butlast)
+    by (simp add: append_butlast_last_assoc)
   also have "\<dots> = edges_of_dpath (butlast p @ [last p]) @ edges_of_dpath (last p # p')"
     using edges_of_dpath_append_2 by fastforce
   also have "\<dots> = edges_of_dpath p @ edges_of_dpath (last p # p')"
@@ -167,9 +170,10 @@ lemma dpath_vertex_has_edge:
   assumes "length p \<ge> 2" "v \<in> set p"
   obtains e u where "e \<in> set (edges_of_dpath p)" "e = (u, v) \<or> e = (v, u)"
 proof -
-  obtain i where idef: "v = p ! i" "i < length p" by (metis assms(2) in_set_conv_nth)
+  obtain i where idef: "v = p ! i" "i < length p" 
+    using assms(2) by (auto simp: in_set_conv_nth)
   have eodplength': "Suc (length (edges_of_dpath p)) = length p"
-    by (metis Suc_diff_1 assms(2) edges_of_dpath_length emptyE length_greater_0_conv list.set(1))
+    using assms(1) by (auto simp: edges_of_dpath_length)
   hence eodplength: "length (edges_of_dpath p) \<ge> 1" using assms(1) by simp
 
   from idef consider (nil) "i = 0" | (gt) "i > 0" "Suc i < length p" | (last) "Suc i = length p"
@@ -178,20 +182,26 @@ proof -
   proof cases
     case nil
     hence "edges_of_dpath p ! 0 = (p ! 0, p ! 1)" using edges_of_dpath_index assms(1) by force
-    then show ?thesis using nil idef(1) eodplength
-      by (metis One_nat_def Suc_le_eq nth_mem that)
+    then show ?thesis using that nil idef eodplength
+      by (force simp: in_set_conv_nth)
   next
     case gt
-    then show ?thesis using edges_of_dpath_for_inner idef(1)
-      by (metis Suc_less_SucD eodplength' nth_mem that)
+    then obtain w where w: "(v, w) = edges_of_dpath p ! i"
+      by (auto elim: edges_of_dpath_for_inner[OF idef(1) gt(2)])
+    have "i < length (edges_of_dpath p)"
+      using eodplength' gt(2) by auto
+    then show ?thesis using that w[symmetric] nth_mem by blast
   next
     case last
-    hence "edges_of_dpath p ! (i - 1) = (p ! (i - 1), p ! i)"
-      by (metis Suc_diff_le diff_Suc_1 edges_of_dpath_index eodplength' eodplength idef(2))
-    then show ?thesis using last eodplength eodplength' idef(1)
-      by (metis One_nat_def Suc_inject Suc_le_lessD diff_less le_eq_less_or_eq nth_mem that)
+    then obtain w where w: "(w, v) = edges_of_dpath p ! (i - 1)"
+      using edges_of_dpath_for_inner'[of v p "i - 1"] eodplength' eodplength
+      by (auto simp: idef)
+    have "i - 1 < length (edges_of_dpath p)"
+      using eodplength eodplength' last by linarith
+    then show ?thesis using that w[symmetric] nth_mem by blast
   qed
 qed
+
 
 thm v_in_edge_in_path_inj
 lemma v_in_edge_in_dpath_inj:
@@ -244,7 +254,7 @@ lemma hd_v_fst_hd_e:
   shows "hd p = fst (hd (edges_of_dpath p))"
 proof -
   obtain a b ps where "p = a # b # ps"
-    by (metis Suc_le_length_iff assms numeral_2_eq_2)
+    using assms by (auto dest: Suc_leI simp: Suc_le_length_iff numeral_2_eq_2)
   thus ?thesis by simp
 qed
 
@@ -270,7 +280,7 @@ thm edges_of_path_append_subset
 lemma edges_of_dpath_append_subset:
   shows "set (edges_of_dpath p') \<subseteq> set (edges_of_dpath (p @ p'))"
   using edges_of_dpath_append
-  by (metis eq_iff le_supE set_append)
+  by (metis Un_iff set_append subsetI)
 
 thm walk_betw_def
 term dpath_bet
@@ -306,13 +316,16 @@ lemma dpath_bet_reflexive:
 
 thm walk_symmetric \<comment> \<open>only for undirected/symmetric graphs\<close>
 
+lemma singleton_hd_last: "q \<noteq> [] \<Longrightarrow> tl q = [] \<Longrightarrow> hd q = last q"
+  by (cases q) simp_all
+
 thm walk_transitive
 lemma dpath_bet_transitive:
   assumes "dpath_bet E p u v" "dpath_bet E q v w"
   shows "dpath_bet E (p @ tl q) u w"
   using assms
   unfolding dpath_bet_def
-  by (metis append_Nil2 append_butlast_last_id append_is_Nil_conv dpath_concat hd_Cons_tl hd_append2 last_appendR last_tl)
+  by (auto intro: dpath_concat simp: last_append singleton_hd_last last_tl)
 
 thm walk_in_Vs
 lemma dpath_bet_in_dVs:
@@ -333,7 +346,9 @@ thm walk_pref
 lemma dpath_bet_pref:
   assumes "dpath_bet E (pr @ [x] @ su) u v"
   shows "dpath_bet E (pr @ [x]) u x"
-  by (metis append.assoc append_dpath_pref assms dpath_bet_def hd_append2 snoc_eq_iff_butlast)
+  using assms
+  unfolding dpath_bet_def
+  by (auto simp: append_dpath_pref) (simp add: hd_append)
 
 thm walk_suff
 lemma dpath_bet_suff:
@@ -346,9 +361,9 @@ thm edges_are_walks
 lemma edges_are_dpath_bet:
   assumes "(v, w) \<in> E"
   shows "dpath_bet E [v, w] v w"
-  using assms dVsI1
+  using assms dVsI
   unfolding dpath_bet_def
-  by (metis append_butlast_last_id butlast.simps(2) dpath1 dpath_snoc_edge' last.simps list.sel(1) list.simps(3))
+  by fastforce
 
 thm walk_subset
 lemma dpath_bet_subset:
