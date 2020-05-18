@@ -279,14 +279,15 @@ lemma awalk_cyc_decompE:
 proof
   show "p = q @ r @ s" "distinct (awalk_verts u q)" "closed_w E r"
     using awalk_cyc_decomp_has_prop[OF p_props] and dec
-    by (auto simp: closed_w_def awalk_verts_conv) (metis fst_conv image_eqI)
+      imageI[of "(snd (last q), _)" "set q" fst]
+    by (auto simp: closed_w_def awalk_verts_conv)
   then have "p \<noteq> []" by (auto simp: closed_w_def)
 
   obtain u' w' v' where obt_awalk: "awalk E u' q w'" "awalk E w' r w'" "awalk E w' s v'"
     using awalk_cyc_decomp_has_prop[OF p_props] and dec by auto
   then have "awalk E u' p v'" 
     using \<open>p = q @ r @ s\<close> by simp
-  then have "u = u'" and "v = v'" using \<open>p \<noteq> []\<close> \<open>awalk E u p v\<close> by (metis awalk_ends)+
+  then have "u = u'" and "v = v'" using \<open>p \<noteq> []\<close> \<open>awalk E u p v\<close> by (auto dest: awalk_ends)
   then have "awalk E u q w'" "awalk E w' r w'" "awalk E w' s v"
     using obt_awalk by auto
   then show "\<exists>w. awalk E u q w \<and> awalk E w r w \<and> awalk E w s v" by auto
@@ -304,7 +305,8 @@ proof (relation "measure (length \<circ> snd)")
   then obtain u v where *: "awalk E u p v" "\<not>distinct (awalk_verts u p)"
     by (cases p) auto
   then have "awalk_cyc_decomp E p = (q, r, s)" using ** by simp
-  then have "is_awalk_cyc_decomp E p (q, r, s)" using * awalk_cyc_decomp_has_prop by metis
+  then have "is_awalk_cyc_decomp E p (q, r, s)" using *
+    by (auto intro: awalk_cyc_decomp_has_prop elim!: awalk_cyc_decompE simp: closed_w_def)
   then show "((E, q @ s), E, p) \<in> measure (length \<circ> snd)"
     by (auto simp: closed_w_def)
 qed simp
