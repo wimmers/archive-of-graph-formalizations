@@ -1,15 +1,15 @@
 theory Noschinski_to_DDFS
   imports 
     "../DDFS"
-    "../Directed_Graphs/Digraph_Summary"
     Berge_to_DDFS
+    Graph_Theory.Stuff
+    Graph_Theory.Rtrancl_On
 begin
 
 section \<open>Theorems from Digraph_Summary (Noschinski)\<close>
 
 type_synonym 'a awalk = "('a \<times> 'a) list"
 
-term pre_digraph.awalk_verts
 fun awalk_verts :: "'a \<Rightarrow> 'a awalk \<Rightarrow> 'a list" where
     "awalk_verts u [] = [u]"
   | "awalk_verts u ((t, h) # es) = t # awalk_verts h es"
@@ -91,19 +91,14 @@ lemma hd_in_awalk_verts:
   by (cases p) auto
 
 lemma awalk_Cons_iff:
-  shows "awalk E u ((t, h) # es) w \<longleftrightarrow> (t, h) \<in> E \<and> u = t \<and> awalk E h es w" (is "?L \<longleftrightarrow> ?R")
-proof
-  assume asm: "?L"
-  then have "(t, h) \<in> E" by auto
-  moreover from asm have "u = t" by auto
-  moreover from asm have "awalk E h es w" using awalk_def dVsI(2) by fastforce
-  ultimately show "?R" by auto
-next
-  assume asm: "?R"
-  then show "?L" using awalk_def dVsI(1) by fastforce
-qed
+  shows "awalk E u (e # es) w \<longleftrightarrow> e \<in> E \<and> fst e = u \<and> awalk E (snd e) es w"
+  by (auto simp: awalk_def cas_simp dVsI')
 
 lemmas awalk_simps = awalk_Nil_iff awalk_Cons_iff
+
+lemma arc_implies_awalk:
+  "e \<in> E \<Longrightarrow> e = (u, v) \<Longrightarrow> awalk E u [e] v"
+  by (simp add: awalk_simps dVsI)
 
 lemma awalkI_apath:
   assumes "apath E u p v" shows "awalk E u p v"
@@ -370,5 +365,159 @@ lemma "awalk_imp_dpath":
   using assms
   by (induction p arbitrary: u rule: edges_of_dpath.induct)
      (auto simp: awalk_simps)
+
+text \<open>Reachability\<close>
+
+abbreviation dominates :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<index>_" [100,100] 40) where
+  "dominates E u v \<equiv> (u,v) \<in> E"
+
+abbreviation reachable1 :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<^sup>+\<index> _" [100,100] 40) where
+  "reachable1 E u v \<equiv> (u,v) \<in> E\<^sup>+"
+
+definition reachable :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<^sup>*\<index> _" [100,100] 40) where
+  "reachable E u v \<equiv> (u,v) \<in> rtrancl_on (dVs E) E"
+
+lemma reachableE[elim]:
+  assumes "u \<rightarrow>\<^bsub>E\<^esub> v"
+  obtains e where "e \<in> E" "e = (u, v)"
+  using assms by auto
+
+lemma adj_in_dVs:
+  assumes "u \<rightarrow>\<^bsub>E\<^esub> v"
+  shows "u \<in> dVs E" "v \<in> dVs E"
+  using assms by (auto simp: dVsI)
+
+lemma reachable_refl[intro!, Pure.intro!, simp]: "v \<in> dVs E \<Longrightarrow> v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+  unfolding reachable_def by auto
+
+lemma reachable_induct[consumes 1, case_names base step]:
+  assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+    and cases: "u \<in> dVs E \<Longrightarrow> P u"
+      "\<And>x y. \<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> x; x \<rightarrow>\<^bsub>E\<^esub> y; P x\<rbrakk> \<Longrightarrow> P y"
+  shows "P v"
+  using assms unfolding reachable_def by (rule rtrancl_on_induct)
+
+lemma converse_reachable_induct[consumes 1, case_names base step, induct pred: reachable]:
+  assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+    and cases: "v \<in> dVs E \<Longrightarrow> P v"
+      "\<And>x y. \<lbrakk>x \<rightarrow>\<^bsub>E\<^esub> y; y \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v; P y\<rbrakk> \<Longrightarrow> P x"
+    shows "P u"
+  using assms unfolding reachable_def by (rule converse_rtrancl_on_induct)
+
+lemma reachable_in_dVs:
+  assumes "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+  shows "u \<in> dVs E" "v \<in> dVs E"
+  using assms by (induct) (simp_all add: adj_in_dVs)
+
+lemma reachable1_in_dVs:
+  assumes "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
+  shows "u \<in> dVs E" "v \<in> dVs E"
+  using assms by (induct) (simp_all add: adj_in_dVs)
+
+
+lemma reachable1_reachable[intro]:
+  "v \<rightarrow>\<^sup>+\<^bsub>E\<^esub> w \<Longrightarrow> v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
+  unfolding reachable_def
+  by (auto intro: rtrancl_consistent_rtrancl_on simp: adj_in_dVs reachable1_in_dVs)
+
+lemmas reachable1_reachableE[elim] = reachable1_reachable[elim_format]
+
+lemma reachable_neq_reachable1[intro]:
+  assumes reach: "v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
+    and neq: "v \<noteq> w"
+  shows "v \<rightarrow>\<^sup>+\<^bsub>E\<^esub> w" 
+  using assms
+  unfolding reachable_def
+  by (auto dest: rtrancl_on_rtranclI rtranclD)
+
+lemmas reachable_neq_reachable1E[elim] = reachable_neq_reachable1[elim_format]
+
+lemma arc_implies_dominates: "e \<in> E \<Longrightarrow> fst e \<rightarrow>\<^bsub>E\<^esub> snd e" by auto
+
+lemma reachable1_awalk:
+  "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v \<longleftrightarrow> (\<exists>p. awalk E u p v \<and> p \<noteq> [])"
+proof
+  assume "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v" then show "\<exists>p. awalk E u p v \<and> p \<noteq> []"
+  proof (induct rule: converse_trancl_induct)
+    case (base y) then obtain e where "e \<in> E" "e = (y, v)" by auto
+    then show ?case by (auto intro: arc_implies_awalk)
+  next
+    case (step x y)
+    then obtain p where "awalk E y p v" "p \<noteq> []" by auto
+    moreover
+    from \<open>x \<rightarrow>\<^bsub>E\<^esub> y\<close> obtain e where "e = (x, y)" "e \<in> E" by auto
+    ultimately have "awalk E x (e # p) v" by (auto simp: awalk_Cons_iff)
+    then show ?case by auto
+  qed
+next
+  assume "\<exists>p. awalk E u p v \<and> p \<noteq> []" then obtain p where "awalk E u p v" "p \<noteq> []" by auto
+  thus "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
+  proof (induct p arbitrary: u)
+    case (Cons a p)
+    then show ?case 
+      by (cases "p = []") 
+         (auto simp: awalk_simps trancl_into_trancl2 simp del: prod.collapse dest: arc_implies_dominates)
+  qed simp
+qed
+
+lemma reachable_awalk:
+  "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v \<longleftrightarrow> (\<exists>p. awalk E u p v)"
+proof cases
+  assume "u = v"
+  have "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> u \<longleftrightarrow> awalk E u [] u" by (auto simp: awalk_Nil_iff reachable_in_dVs)
+  then show ?thesis using \<open>u = v\<close> by auto                 
+next
+  assume "u \<noteq> v"
+  then have "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v" by auto
+  also have "\<dots> \<longleftrightarrow> (\<exists>p. awalk E u p v)" 
+    using \<open>u \<noteq> v\<close> unfolding reachable1_awalk by force
+  finally show ?thesis .
+qed
+
+definition cycle :: "('a \<times> 'a) set \<Rightarrow> 'a awalk \<Rightarrow> bool" where
+  "cycle E p \<equiv> \<exists>u. awalk E u p u \<and> distinct (tl (awalk_verts u p)) \<and> p \<noteq> []"
+
+definition subgraph :: "('a \<times> 'a) set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> bool" where
+  "subgraph H G \<equiv> H \<subseteq> G"
+
+lemma subgraphI:
+  "H \<subseteq> G \<Longrightarrow> subgraph H G" by (simp add: subgraph_def)
+
+lemma subgraph_dVs: "subgraph H G \<Longrightarrow> dVs H \<subseteq> dVs G"
+  by (auto simp: subgraph_def dVs_subset)
+
+lemma subgraph_dVs': "subgraph H G \<Longrightarrow> u \<in> dVs H \<Longrightarrow> u \<in> dVs G"
+  by (auto dest: subgraph_dVs)
+
+lemma subgraph_awalk_imp_awalk:
+  assumes walk: "awalk H u p v"
+  assumes sub: "subgraph H G"
+  shows "awalk G u p v"
+  using assms by (auto simp: awalk_def subgraph_dVs' subgraph_def)
+
+lemma subgraph_apath_imp_apath:
+  assumes path: "apath H u p v"
+  assumes sub: "subgraph H G"
+  shows "apath G u p v"
+  using assms by (auto intro: subgraph_awalk_imp_awalk simp: apath_def)
+
+lemma subgraph_cycle:
+  assumes "subgraph H G" "cycle H p" shows "cycle G p"
+  using assms
+  by (auto intro: subgraph_awalk_imp_awalk simp: cycle_def)
+
+lemma dpathI_subgraph:
+  assumes "dpath H p"
+  assumes "subgraph H G"
+  shows "dpath G p"
+  using assms dpath_subset subgraph_def by blast
+
+lemma reachable_mono:
+  assumes walk: "u \<rightarrow>\<^sup>*\<^bsub>H\<^esub> v" and sub: "subgraph H G"
+  shows "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
+  using assms
+  by (meson reachable_awalk subgraph_awalk_imp_awalk)
+
+
 
 end
