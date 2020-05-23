@@ -54,6 +54,13 @@ lemma dVsI:
   assumes "(a, v) \<in> dG" shows "a \<in> dVs dG" and "v \<in> dVs dG"
   using assms unfolding dVs_def by auto
 
+lemma dVsI':
+  assumes "e \<in> dG" shows "fst e \<in> dVs dG" and "snd e \<in> dVs dG"
+proof -
+  from assms obtain u v where "e = (u,v)" by fastforce
+  then show "fst e \<in> dVs dG" "snd e \<in> dVs dG" using assms by (auto intro: dVsI)
+qed
+
 lemma append_dpath_1: "dpath dG (p1 @ p2) \<Longrightarrow> dpath dG p1"
   by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp: dVsI)+
 

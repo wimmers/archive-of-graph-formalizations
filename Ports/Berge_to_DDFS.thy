@@ -135,12 +135,8 @@ proof (induction p rule: induct_list012)
 qed simp_all
 
 thm edges_of_path_append
-lemma edges_of_dpath_append: "\<exists>ep. edges_of_dpath (p @ p') = ep @ edges_of_dpath p'"
-proof (cases p')
-  case Nil thus ?thesis by simp
-next
-  case Cons thus ?thesis using edges_of_dpath_append_2 by blast
-qed
+lemma edges_of_dpath_append: obtains ep where "edges_of_dpath (p @ p') = ep @ edges_of_dpath p'"
+  by (cases "p' = []") (auto dest: edges_of_dpath_append_2)
 
 lemma append_butlast_last_assoc: "p \<noteq> [] \<Longrightarrow> butlast p @ last p # p' = p @ p'"
   by (induction p) auto
@@ -210,7 +206,7 @@ lemma v_in_edge_in_dpath_inj:
   by fastforce
 
 thm v_in_edge_in_path_gen
-lemma v_in_edge_in_dpath_gen: \<comment> \<open>Not sure if this makes sense.\<close>
+lemma v_in_edge_in_dpath_gen:
   assumes "e \<in> set (edges_of_dpath p)" "e = (u, v)"
   shows "u \<in> set p" "v \<in> set p"
   using assms v_in_edge_in_dpath by simp_all
@@ -260,27 +256,13 @@ qed
 
 thm last_in_edge
 lemma last_in_edge:
-  assumes "p \<noteq> []"
-  shows "\<exists>u. (u, last p) \<in> set (edges_of_dpath (v # p)) \<and> u \<in> set (v # p)"
-  using assms
-proof (induction p arbitrary: v)
-  case (Cons a p)
-  then show ?case
-  proof (cases p)
-    case Nil
-    then show ?thesis by simp
-  next
-    case (Cons a list)
-    then show ?thesis
-      using Cons.IH by fastforce
-  qed
-qed simp
+   "p \<noteq> [] \<Longrightarrow> \<exists>u. (u, last p) \<in> set (edges_of_dpath (v # p)) \<and> u \<in> set (v # p)"
+  by (induction p arbitrary: v) auto
 
 thm edges_of_path_append_subset
 lemma edges_of_dpath_append_subset:
   shows "set (edges_of_dpath p') \<subseteq> set (edges_of_dpath (p @ p'))"
-  using edges_of_dpath_append
-  by (metis Un_iff set_append subsetI)
+  by (auto intro: edges_of_dpath_append[of p p'])
 
 thm walk_betw_def
 term dpath_bet
