@@ -15,19 +15,16 @@ thm path_ball_edges
 lemma dpath_ball_edges: "dpath E p \<Longrightarrow> b \<in> set (edges_of_dpath p) \<Longrightarrow> b \<in> E"
   by (induction p rule: edges_of_dpath.induct, auto)
 
+thm nth_Cons_Suc
 thm edges_of_path_index
 lemma edges_of_dpath_index:
   "Suc i < length p \<Longrightarrow> edges_of_dpath p ! i = (p ! i, p ! Suc i)"
 proof (induction i arbitrary: p)
-  case 0
-  then obtain u v ps where "p = u#v#ps" by (auto dest!: Suc_leI simp: Suc_le_length_iff)
-  then show ?case by simp
-next
   case (Suc i)
   then obtain u v ps where "p = u#v#ps" by (auto dest!: Suc_leI simp: Suc_le_length_iff)
   hence "edges_of_dpath (v#ps) ! i = ((v#ps) ! i, (v#ps) ! Suc i)" using Suc.IH Suc.prems by simp
   then show ?case using \<open>p = u#v#ps\<close> by simp
-qed
+qed (auto dest!: Suc_leI simp: Suc_le_length_iff)
 
 thm edges_of_path_length
 lemma edges_of_dpath_length: "length (edges_of_dpath p) = length p - 1"
@@ -53,14 +50,7 @@ lemma hd_edges_neq_last:
   assumes "(last p, hd p) \<notin> set (edges_of_dpath p)" "hd p \<noteq> last p" "p \<noteq> []"
   shows "hd (edges_of_dpath (last p # p)) \<noteq> last (edges_of_dpath (last p # p))"
   using assms
-proof (induction p)
-  case Nil
-  then show ?case by simp
-next
-  case (Cons a p)
-  then show ?case
-    using edges_of_dpath.elims by auto
-qed
+  by (induction p) (auto elim: edges_of_dpath.elims)
 
 thm Vs_subset
 lemma dVs_subset:
@@ -98,8 +88,7 @@ lemma distinct_edges_of_dpath:
   assumes "distinct p"
   shows "distinct (edges_of_dpath p)"
   using assms
-  apply (induction p rule: edges_of_dpath.induct, simp_all)
-  using v_in_edge_in_dpath by fastforce
+  by (induction p rule: edges_of_dpath.induct, auto dest: v_in_edge_in_dpath)
 
 thm distinct_edges_of_paths_cons
 lemma distinct_edges_of_dpath_cons:
@@ -128,33 +117,22 @@ lemma edges_of_dpath_append_2:
   assumes "p' \<noteq> []"
   shows "edges_of_dpath (p @ p') = edges_of_dpath (p @ [hd p']) @ edges_of_dpath p'"
   using assms
-proof (induction p rule: induct_list012)
-  case 2
-  obtain a p's where "p' = a # p's" using assms list.exhaust_sel by blast
-  then show ?case by simp
-qed simp_all
+  by (induction p rule: induct_list012, auto intro: list.exhaust[of p'])
+
 
 thm edges_of_path_append
 lemma edges_of_dpath_append: obtains ep where "edges_of_dpath (p @ p') = ep @ edges_of_dpath p'"
   by (cases "p' = []") (auto dest: edges_of_dpath_append_2)
 
 lemma append_butlast_last_assoc: "p \<noteq> [] \<Longrightarrow> butlast p @ last p # p' = p @ p'"
-  by (induction p) auto
+  by simp
 
 thm edges_of_path_append_3
 lemma edges_of_dpath_append_3:
   assumes "p \<noteq> []"
   shows "edges_of_dpath (p @ p') = edges_of_dpath p @ edges_of_dpath (last p # p')"
-proof -
-  from assms
-  have "edges_of_dpath (p @ p') = edges_of_dpath (butlast p @ last p # p')"
-    by (simp add: append_butlast_last_assoc)
-  also have "\<dots> = edges_of_dpath (butlast p @ [last p]) @ edges_of_dpath (last p # p')"
-    using edges_of_dpath_append_2 by fastforce
-  also have "\<dots> = edges_of_dpath p @ edges_of_dpath (last p # p')"
-    by (simp add: assms)
-  finally show ?thesis .
-qed
+  using assms
+  by (auto simp flip: append_butlast_last_assoc simp: edges_of_dpath_append_2)
 
 thm path_suff path_pref
 thm append_dpath_suff append_dpath_pref
@@ -216,13 +194,7 @@ thm path_then_in_Vs
 
 thm edges_of_path_Vs
 lemma edges_of_dpath_dVs: "dVs (set (edges_of_dpath p)) \<subseteq> set p"
-proof
-  fix x
-  assume "x \<in> dVs (set (edges_of_dpath p))"
-  then obtain u where "(u, x) \<in> set (edges_of_dpath p) \<or> (x, u) \<in> set (edges_of_dpath p)"
-    unfolding dVs_def by blast
-  thus "x \<in> set p" using v_in_edge_in_dpath by auto
-qed
+  by (auto intro: v_in_edge_in_dpath simp: dVs_def)
 
 thm path_edges_subset
 lemma dpath_edges_subset:
@@ -236,23 +208,15 @@ lemma last_v_snd_last_e:
   assumes "length p \<ge> 2"
   shows "last p = snd (last (edges_of_dpath p))" \<comment> \<open>is this the best formulation for this?\<close>
   using assms
-proof (induction p rule: induct_list012)
-  case (3 x y zs)
-  then show ?case apply (auto split: if_splits)
-    subgoal using edges_of_dpath.elims by blast
-    subgoal by (simp add: Suc_leI)
-    done
-qed simp_all
+  by (induction p rule: induct_list012) 
+     (auto split: if_splits elim: edges_of_dpath.elims simp: Suc_leI)
 
 thm hd_v_in_hd_e
 lemma hd_v_fst_hd_e:
   assumes "length p \<ge> 2"
   shows "hd p = fst (hd (edges_of_dpath p))"
-proof -
-  obtain a b ps where "p = a # b # ps"
-    using assms by (auto dest: Suc_leI simp: Suc_le_length_iff numeral_2_eq_2)
-  thus ?thesis by simp
-qed
+  using assms
+  by (auto dest: Suc_leI simp: Suc_le_length_iff numeral_2_eq_2)
 
 thm last_in_edge
 lemma last_in_edge:
@@ -358,9 +322,9 @@ lemma dpath_bet_subset:
 thm induct_walk_betw
 lemma induct_dpath_bet[case_names path1 path2, consumes 1, induct set: dpath_bet]:
   assumes "dpath_bet E p a b"
-  assumes Path1: "\<And>v. v \<in> dVs E \<Longrightarrow> P [v] v v"
-  assumes Path2: "\<And>v v' vs b. (v, v') \<in> E \<Longrightarrow> dpath_bet E (v' # vs) v' b \<Longrightarrow> P (v' # vs) v' b \<Longrightarrow> P (v # v' # vs) v b"
-  shows "P p a b"
+  assumes Path1: "\<And>v. v \<in> dVs E \<Longrightarrow> P E [v] v v"
+  assumes Path2: "\<And>v v' vs b. (v, v') \<in> E \<Longrightarrow> dpath_bet E (v' # vs) v' b \<Longrightarrow> P E (v' # vs) v' b \<Longrightarrow> P E (v # v' # vs) v b"
+  shows "P E p a b"
 proof -
   have "dpath E p" "p \<noteq> []" "hd p = a" "last p = b" using assms(1) by auto
   thus ?thesis

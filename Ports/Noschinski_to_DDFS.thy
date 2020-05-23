@@ -179,7 +179,6 @@ lemma awalk_decomp_verts:
   assumes cas: "cas u p v" and ev_decomp: "awalk_verts u p = xs @ y  # ys"
   obtains q r where "cas u q y" "cas y r v" "p = q @ r" "awalk_verts u q = xs @ [y]"
     "awalk_verts y r = y # ys"
-  using assms
 proof -
   define q r where "q = take (length xs) p" and "r = drop (length xs) p"
   then have p: "p = q @ r" by simp
@@ -438,17 +437,8 @@ lemma reachable1_awalk:
   "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v \<longleftrightarrow> (\<exists>p. awalk E u p v \<and> p \<noteq> [])"
 proof
   assume "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v" then show "\<exists>p. awalk E u p v \<and> p \<noteq> []"
-  proof (induct rule: converse_trancl_induct)
-    case (base y) then obtain e where "e \<in> E" "e = (y, v)" by auto
-    then show ?case by (auto intro: arc_implies_awalk)
-  next
-    case (step x y)
-    then obtain p where "awalk E y p v" "p \<noteq> []" by auto
-    moreover
-    from \<open>x \<rightarrow>\<^bsub>E\<^esub> y\<close> obtain e where "e = (x, y)" "e \<in> E" by auto
-    ultimately have "awalk E x (e # p) v" by (auto simp: awalk_Cons_iff)
-    then show ?case by auto
-  qed
+    by (induct rule: converse_trancl_induct)
+       (auto intro: arc_implies_awalk awalk_appendI)
 next
   assume "\<exists>p. awalk E u p v \<and> p \<noteq> []" then obtain p where "awalk E u p v" "p \<noteq> []" by auto
   thus "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
