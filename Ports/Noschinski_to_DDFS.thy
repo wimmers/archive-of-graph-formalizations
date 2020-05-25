@@ -140,11 +140,8 @@ lemma awalkE'[elim]:
   assumes "awalk E u p v"
   obtains "set (awalk_verts u p) \<subseteq> dVs E" "set p \<subseteq> E" "cas u p v"
     "awhd u p = u" "awlast u p = v" "u \<in> dVs E" "v \<in> dVs E"
-proof -
-  have "u \<in> set (awalk_verts u p)" "v \<in> set (awalk_verts u p)"
-    using assms by (auto simp: hd_in_awalk_verts elim: awalkE)
-  then show ?thesis using assms by (auto elim: awalkE intro: that)
-qed
+  using assms
+  by (auto elim!: awalkE simp: awlast_in_verts, auto simp: awalk_def)
 
 lemma awalk_appendI:
   assumes "awalk E u p v"
@@ -506,8 +503,6 @@ lemma reachable_mono:
   assumes walk: "u \<rightarrow>\<^sup>*\<^bsub>H\<^esub> v" and sub: "subgraph H G"
   shows "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
   using assms
-  by (meson reachable_awalk subgraph_awalk_imp_awalk)
-
-
+  by (auto simp: reachable_awalk dest: subgraph_awalk_imp_awalk)
 
 end
