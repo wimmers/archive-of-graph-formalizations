@@ -21,7 +21,7 @@ inductive_simps dpath_2[simp]: "dpath E (v # v' # vs)"
 
 definition "dpath_bet dG p v v' \<equiv> dpath dG p \<and> p \<noteq> [] \<and> hd p = v \<and> last p = v'"
 
-lemma path_then_edge: "dpath_bet dG p v v' \<Longrightarrow> p \<noteq> [] \<Longrightarrow> v \<noteq> v' \<Longrightarrow> (\<exists>v''. (v, v'') \<in> dG)"
+lemma path_then_edge: "dpath_bet dG p v v' \<Longrightarrow> v \<noteq> v' \<Longrightarrow> (\<exists>v''. (v, v'') \<in> dG)"
   by(cases p; auto split: if_splits simp: neq_Nil_conv dpath_bet_def)
 
 lemma path_then_in_Vs: "dpath dG p \<Longrightarrow> v \<in> set p \<Longrightarrow> v \<in> dVs dG"
@@ -31,15 +31,15 @@ lemma dpath_cons: "dpath dG (v1#v2#p) \<Longrightarrow> (v1,v2) \<in> dG"
   by simp
 
 lemma hd_of_dpath_bet:
-  "dpath_bet dG p v v' \<Longrightarrow> p \<noteq> [] \<Longrightarrow> \<exists>p'. p = v # p'"
+  "dpath_bet dG p v v' \<Longrightarrow> \<exists>p'. p = v # p'"
   by(auto simp: neq_Nil_conv dpath_bet_def)
 
 lemma hd_of_dpath_bet': 
-  "dpath_bet dG p v v' \<Longrightarrow> p \<noteq> [] \<Longrightarrow> v = hd p"
+  "dpath_bet dG p v v' \<Longrightarrow> v = hd p"
   by(auto simp: neq_Nil_conv dpath_bet_def)
 
 lemma last_of_dpath_bet: 
-  "dpath_bet dG p v v' \<Longrightarrow> p \<noteq> [] \<Longrightarrow> v' = last p"
+  "dpath_bet dG p v v' \<Longrightarrow> v' = last p"
   by(auto simp: neq_Nil_conv dpath_bet_def)
 
 lemma induct_pcpl:
@@ -99,8 +99,7 @@ lemma dpath_bet_dpath:
   by(auto simp: neq_Nil_conv dpath_bet_def)
 
 lemma dpath_snoc_edge': "dpath dG (p @ [v]) \<Longrightarrow> (v, v') \<in> dG \<Longrightarrow> dpath dG ((p @ [v]) @ [v'])"
-  apply (rule append_dpath)  
-  by (auto simp add: dVs_def)
+  by (rule append_dpath) (auto simp add: dVs_def)
 
 lemma dpath_snoc_edge: "dpath dG (p @ [v]) \<Longrightarrow> (v, v') \<in> dG \<Longrightarrow> dpath dG (p @ [v, v'])"
   using dpath_snoc_edge'
