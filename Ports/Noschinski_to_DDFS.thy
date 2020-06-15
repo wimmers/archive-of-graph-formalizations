@@ -467,7 +467,7 @@ definition cycle :: "('a \<times> 'a) set \<Rightarrow> 'a awalk \<Rightarrow> b
 definition subgraph :: "('a \<times> 'a) set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> bool" where
   "subgraph H G \<equiv> H \<subseteq> G"
 
-lemma subgraphI:
+lemma subgraphI[intro]:
   "H \<subseteq> G \<Longrightarrow> subgraph H G" by (simp add: subgraph_def)
 
 lemma subgraph_dVs: "subgraph H G \<Longrightarrow> dVs H \<subseteq> dVs G"
