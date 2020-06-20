@@ -112,7 +112,7 @@ proof -
     ..
 qed
 
-lemma dpath_bet_vertex_decompE2:
+lemma dpath_bet_vertex_decompE_2:
   assumes p_dpath: "dpath_bet E p u w"
   assumes v_in_p: "v \<in> set p"
   assumes qr_def: "dpath_bet_vertex_decomp E p v = (q, r)"
@@ -361,7 +361,7 @@ proof -
     by auto
   hence "dpath_bet E p u' v'"
     by (auto intro: dpath_bet_append_append_is_dpath_bet)
-  hence "u' = u" "v' = v" sledgehammer
+  hence "u' = u" "v' = v"
     using p_dpath
     by (simp_all add: dpath_bet_def)
   hence "\<exists>w. dpath_bet E q u w \<and> closed_dpath_bet E r w \<and> dpath_bet E s w v"
