@@ -1,12 +1,12 @@
 theory Noschinski_to_DDFS
   imports 
-    "../DDFS"
+    AGF.DDFS
     Berge_to_DDFS
     Graph_Theory.Stuff
     Graph_Theory.Rtrancl_On
 begin
 
-section \<open>Theorems from Digraph_Summary (Noschinski)\<close>
+section \<open>Theorems from Digraph-Summary (Noschinski)\<close>
 
 type_synonym 'a awalk = "('a \<times> 'a) list"
 

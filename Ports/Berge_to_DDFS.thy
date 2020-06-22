@@ -1,7 +1,7 @@
 theory Berge_to_DDFS
   imports 
-    "../DDFS"
-    "../Undirected_Graphs/Berge"
+    AGF.DDFS
+    AGF.Berge
 begin
 
 term edges_of_path

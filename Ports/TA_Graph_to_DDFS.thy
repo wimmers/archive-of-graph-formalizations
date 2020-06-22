@@ -1,6 +1,6 @@
 theory TA_Graph_to_DDFS
   imports 
-    "../DDFS"
+    AGF.DDFS
     Berge_to_DDFS \<comment> \<open>vertex walk (\<^term>\<open>dpath\<close>)\<close>
     Noschinski_to_DDFS \<comment> \<open>reachability (\<^term>\<open>reachable\<close>)\<close>
 begin

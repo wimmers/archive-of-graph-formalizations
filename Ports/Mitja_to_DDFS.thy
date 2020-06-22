@@ -1,7 +1,7 @@
 theory Mitja_to_DDFS
   imports 
     TA_Graph_to_DDFS \<comment> \<open>includes all existing ports\<close>
-    "../Undirected_Graphs/Mitja/Misc"
+    AGF.Misc
 begin
 
 text \<open>A walk in the Mitja representation corresponds to \<^term>\<open>dpath_bet\<close> in DDFS.\<close>
@@ -12,14 +12,9 @@ abbreviation closed_dpath_bet :: "('a \<times> 'a) set \<Rightarrow> 'a list \<R
 lemma edge_iff_dpath_bet: "(u, v) \<in> E = dpath_bet E [u, v] u v"
   by (auto simp: edges_are_dpath_bet dpath_bet_def dVsI)
 
-lemma "v \<in> dVs E \<Longrightarrow> dpath_bet E [v] v v"
-  sorry
 
 lemma dpath_bet_in_vertices: "dpath_bet E p u v \<Longrightarrow> w \<in> set p \<Longrightarrow> w \<in> dVs E"
   by (auto intro: path_then_in_Vs)
-
-lemma "dpath_bet E p u v \<Longrightarrow> u \<in> dVs E"
-  sorry
 
 lemma dpath_bet_hd_neq_last_implies_edges_nonempty:
   assumes "dpath_bet E p u v"
@@ -45,12 +40,6 @@ lemma dpath_bet_suffix_is_dpath_bet:
   using assms
   by (auto simp: dpath_bet_def dest: dpath_appendD2)
 
-lemma
-  assumes "dpath_bet E p u v"
-  assumes "dpath_bet E q v w"
-  shows "dpath_bet E (p @ tl q) u w"
-  sorry
-
 lemma dpath_bet_append_append_is_dpath_bet:
   assumes "dpath_bet E p u v"
   assumes "dpath_bet E q v w"
@@ -64,11 +53,6 @@ lemma
   shows "edges_of_dpath (p @ q) = edges_of_dpath p @ edges_of_dpath ([last p] @ q)"
   using assms
   by (simp add: edges_of_dpath_append_3)
-
-lemma
-  assumes "q \<noteq> []"
-  shows "edges_of_dpath (p @ q) = edges_of_dpath (p @ [hd q]) @ edges_of_dpath q"
-  sorry
 
 fun is_dpath_bet_vertex_decomp :: "('a \<times> 'a) set \<Rightarrow> 'a list \<Rightarrow> 'a \<Rightarrow> 'a list \<times> 'a list \<Rightarrow> bool" where
   "is_dpath_bet_vertex_decomp E p v (q, r) \<longleftrightarrow> p = q @ tl r \<and> (\<exists>u w. dpath_bet E q u v \<and> dpath_bet E r v w)"
@@ -162,7 +146,7 @@ lemma induced_subgraph_dVs_subset_V:
   by auto
 
 lemma induced_subgraph_dVs_subset_Int:
-  "induced_subgraph H V G \<Longrightarrow> dVs H \<subseteq> dVs G \<inter> V" \<comment> \<open>\<subseteq>: we may lose vertices when it gets disconnected\<close>
+  "induced_subgraph H V G \<Longrightarrow> dVs H \<subseteq> dVs G \<inter> V" \<comment> \<open>vertices might become disconnected\<close>
   by (simp add: induced_subgraph_dVs_subset_V induced_subgraph_subgraph subgraph_dVs)
 
 lemma dpath_induced_subgraph_dpath:
