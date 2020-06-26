@@ -76,6 +76,11 @@ lemma awalk_conv:
   unfolding awalk_def using hd_in_set[OF awalk_verts_non_Nil, of u p]
   by (auto intro: awalk_verts_in_verts awhd_if_cas awlast_if_cas simp del: hd_in_set)
 
+lemma awalkI:
+  assumes "set (awalk_verts u p) \<subseteq> dVs E" "set p \<subseteq> E" "cas u p v"
+  shows "awalk E u p v"
+  using assms by (auto simp: awalk_conv awhd_if_cas awlast_if_cas)
+
 lemma awalkE[elim]:
   assumes "awalk E u p v"
   obtains "set (awalk_verts u p) \<subseteq> dVs E" "set p \<subseteq> E" "cas u p  v"
@@ -356,11 +361,17 @@ next
 qed
 
 text \<open>Vertex walks\<close>
-lemma "awalk_imp_dpath":
-  assumes "awalk E u p v" shows "dpath E (awalk_verts u p)"
+lemma awalk_imp_dpath:
+  assumes "awalk E u p v" shows "dpath_bet E (awalk_verts u p) u v"
   using assms
   by (induction p arbitrary: u rule: edges_of_dpath.induct)
-     (auto simp: awalk_simps)
+     (auto simp: awalk_simps dpath_bet_reflexive edges_are_dpath_bet, simp add: dpath_bet_def)
+
+lemma dpath_imp_awalk:
+  "dpath_bet E p u v \<Longrightarrow> awalk E u (edges_of_dpath p) v"
+  unfolding dpath_bet_def
+  by (induction p arbitrary: u rule: edges_of_dpath.induct)
+   (auto simp: awalk_Nil_iff arc_implies_awalk awalk_Cons_iff)
 
 text \<open>Reachability\<close>
 

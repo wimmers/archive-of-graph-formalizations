@@ -138,10 +138,67 @@ text \<open>
 \<close>
 thm wf_digraph.awalk_imp_vwalk
 text \<open>
-  The converse direction is nontrivial for Digraph. For the remaining (non multigraph) representations
-  both directions should be equally "easy".
+  The converse direction is nontrivial for Digraph because one cannot recover the arcs used by a
+  vertex walk. For the other (non multigraph) representations both directions should be obtainable.
+  See the following to lemmas for reference:
 \<close>
+thm awalk_imp_dpath
+thm dpath_imp_awalk
 
 subsection \<open>Empty vs.\ nonempty walks\<close>
+text \<open>
+  As mentioned before, the formalizations differ in whether they allow empty walks (i.e.\ \<^term>\<open>[]\<close>)
+  or not. This has some implications on the automation when a proof is conducted with induction on
+  the list representing a walk. Consider the proofs of the following lemmas, the first one from DDFS
+  which allows empty walks, the second one from TA-Graph, which does not allow empty walks.
+\<close>
+thm append_dpath_pref
+thm Graph_Defs.steps_appendD1
+text \<open>
+  In TA-Graph an additional case distinction is required in the induction step in order to complete
+  the proof. This inconvenience could possibly be fixed with a custom induction scheme. Thus this
+  aspect also does not lead to a favorable definition of walks, instead it remains a consideration 
+  to be made.
+\<close>
+
+subsection \<open>Implicit vs.\ explicit vertex sets\<close>
+text \<open>
+  Another difference between the different formalizations is whether they define an implicit or
+  explicit vertex set. An implicit vertex set does not allow for disconnected vertices. During
+  the ports of lemmas about walks, this only came into play in one case. The following lemma from
+  Mitja about walks in a (vertex-)induced subgraph took some additional care when formulating, in order to
+  accommodate the implicit vertex set of DDFS.
+\<close>
+thm induced_subgraph.walk_supergraph_is_walk_subgraph
+thm dpath_induced_subgraph_dpath
+
+subsection \<open>Comparison of available Theory\<close>
+text \<open>
+  The introduction of the different representations already briefly introduced what areas they 
+  cover. Most of them specialize at some point into different graph topics besides walks. Strictly
+  speaking about walks, the most "complete" formalization is probably Digraph. One big reason for
+  this of course being that it was the only representation under consideration which formalized
+  arc-walks. It also has a very solid foundation for extending the existing walk lemmas (if that is
+  even necessary).
+
+  As DDFS was the target of the ports it now also has arc-walks. At the same time it needs more work
+  to clean up, unify the concepts introduced by different representations, and also some fleshing out
+  of basic lemmas and intermediate results. While working directly with a set of edges works well for
+  prototyping and some quick developments, it would probably be also helpful to work with locales in
+  further development.
+\<close>
+
+subsection \<open>Conclusion\<close>
+text \<open>
+  In the previous subsections we summarized the findings of porting lemmas from different graph
+  representations to DDFS. The goal was to evaluate whether one formalization offers improved
+  proof automation for lemmas about walks. We conclude that no meaningful advantages can be
+  observed in this regard.
+
+  Subsequently we investigated the differences in the definitions of walks and vertices. Although
+  in this case the effects were observable in some cases, the miniscule reduction of effort does not
+  merit departing from a wanted definition.
+  
+\<close>
 
 end

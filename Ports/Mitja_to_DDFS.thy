@@ -150,7 +150,7 @@ lemma induced_subgraph_dVs_subset_Int:
   by (simp add: induced_subgraph_dVs_subset_V induced_subgraph_subgraph subgraph_dVs)
 
 lemma dpath_induced_subgraph_dpath:
-  assumes "dpath G (u # p @ [v])" \<comment> \<open>vertices only are in the induced subgraph when they don't get disconnected\<close>
+  assumes "dpath G (u # p @ [v])" \<comment> \<open>vertices are only in the induced subgraph when they don't get disconnected\<close>
   assumes "induced_subgraph H V G"
   assumes "set (u # p @ [v]) \<subseteq> V"
   shows "dpath H (u # p @ [v])"

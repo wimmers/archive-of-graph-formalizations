@@ -15,7 +15,6 @@ thm path_ball_edges
 lemma dpath_ball_edges: "dpath E p \<Longrightarrow> b \<in> set (edges_of_dpath p) \<Longrightarrow> b \<in> E"
   by (induction p rule: edges_of_dpath.induct, auto)
 
-thm nth_Cons_Suc
 thm edges_of_path_index
 lemma edges_of_dpath_index:
   "Suc i < length p \<Longrightarrow> edges_of_dpath p ! i = (p ! i, p ! Suc i)"
@@ -92,8 +91,8 @@ lemma distinct_edges_of_dpath:
 
 thm distinct_edges_of_paths_cons
 lemma distinct_edges_of_dpath_cons:
-  assumes "distinct (edges_of_path (v # p))"
-  shows "distinct (edges_of_path p)"
+  assumes "distinct (edges_of_dpath (v # p))"
+  shows "distinct (edges_of_dpath p)"
   using assms
   by (cases p; simp)
 
