@@ -99,7 +99,7 @@ text \<open>
   now on.
 
   Formalizes both vertex (\<^term>\<open>vwalk\<close>) and arc walks (\<^term>\<open>pre_digraph.awalk\<close>). The vertex walk 
-  part focuses on "joinability" of walks. Provides \<^term>\<open>vwalk_arcs\<close> to compute the arcs belonging
+  part introduces "joinability" of walks. Provides \<^term>\<open>vwalk_arcs\<close> to compute the arcs belonging
   to a walk. Note, however, that this gives a list of pairs of vertices, which generally are not the
   arcs of the graph (which have an arbitrary type).
 
@@ -124,7 +124,8 @@ text \<open>
   underlying graph representation. However, Digraph which arguably has the most
   abstract approach, has to help itself by employing more helper definitions, in order to formulate
   lemmas in a manageable way (cf.\ \<^term>\<open>arcs_ends\<close>, \<^term>\<open>pre_digraph.awhd\<close>, etc.). All the other
-  theories chose a more lightweight representation, allowing to work directly on it.
+  theories chose a more lightweight representation, allowing to work directly on the underlying
+  graph.
 \<close>
 
 subsection \<open>Arc walks vs.\ vertex walks\<close>
@@ -174,8 +175,8 @@ thm dpath_induced_subgraph_dpath
 
 subsection \<open>Comparison of available Theory\<close>
 text \<open>
-  The introduction of the different representations already briefly introduced what areas they 
-  cover. Most of them specialize at some point into different graph topics besides walks. Strictly
+  The introduction of the different representations already briefly introduced what areas each of
+  them covers. Most of them specialize at some point into different graph topics besides walks. Strictly
   speaking about walks, the most "complete" formalization is probably Digraph. One big reason for
   this of course being that it was the only representation under consideration which formalized
   arc-walks. It also has a very solid foundation for extending the existing walk lemmas (if that is
@@ -193,7 +194,8 @@ text \<open>
   In the previous subsections we summarized the findings of porting lemmas from different graph
   representations to DDFS. The goal was to evaluate whether one formalization offers improved
   proof automation for lemmas about walks. We conclude that no meaningful advantages can be
-  observed in this regard.
+  observed in this regard. At the same time it does not seem necessary to develop and maintain
+  multiple graph representations.
 
   Subsequently we investigated the differences in the definitions of walks and vertices. Although
   in this case the effects were observable in some cases, the miniscule reduction of effort does not
