@@ -126,7 +126,12 @@ text \<open>
   lemmas in a manageable way (cf.\ \<^term>\<open>arcs_ends\<close>, \<^term>\<open>pre_digraph.awhd\<close>, etc.). All the other
   theories chose a more lightweight representation, allowing to work directly on the underlying
   graph.
+
+  An illustrative example for this are the proofs of the following theorems (and the lemmas leading
+  up to them), where the automation has been set up identically:
 \<close>
+thm wf_digraph.apath_awalk_to_apath
+thm apath_awalk_to_apath
 
 subsection \<open>Arc walks vs.\ vertex walks\<close>
 text \<open>
