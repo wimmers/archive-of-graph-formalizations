@@ -68,6 +68,7 @@ lemma walk_betw_iff_dpath_bet:
 
 
 subsection \<open>Lemmas about relation of \<^term>\<open>edges_of_path\<close> and \<^term>\<open>edges_of_dpath\<close>\<close>
+text \<open>The way edges_of_path and edges_of_dpath are related makes it hard to \<close>
 fun undirected :: "'a \<times> 'a \<Rightarrow> 'a set" where
   "undirected (u, v) = {u, v}"
 
@@ -148,6 +149,7 @@ lemma edges_of_dpath_for_inner'':
   obtains u where "(u, v) = edges_of_dpath p ! (i - 1)"
   using assms by (simp add: edges_of_dpath_index)
 
+\<comment> \<open>TODO\<close>
 thm edges_of_path_for_inner
 lemma edges_of_path_for_inner':
   assumes "v = p ! i" "Suc i < length (p::'a list)"
@@ -171,6 +173,10 @@ lemma edges_of_path_for_inner':
 lemma last_Cons_nonempty: "p \<noteq> [] \<Longrightarrow> Suc 0 < length (last p # p)"
   by simp
 
+\<comment> \<open>TODO\<close>
+lemma hd_last_edges_of_dpath: "p \<noteq> [] \<longleftrightarrow> (\<exists>u v. last (edges_of_dpath (a # p)) = (u, v) \<and> (u, v) \<in> set (edges_of_dpath (a # p)))"
+  sorry
+
 thm Berge.hd_edges_neq_last
 lemma hd_edges_neq_last':
   notes length_greater_0_conv[iff del]
@@ -178,10 +184,16 @@ lemma hd_edges_neq_last':
   shows "hd (edges_of_path (last p # p)) \<noteq> last (edges_of_path (last p # p))"
   using assms
   apply (auto dest!: not_in_edges_of_path_not_in_edges_of_dpath hd_edges_neq_last)
+  apply (cases p)
+   apply (simp_all)
+  subgoal for a list
+  using assms
+   apply (auto split: if_splits simp: hd_last_edges_of_dpath[of list])
+\<comment> \<open>case analysis on p for hd\<close>
+\<comment> \<open>conv lemma for last (...)\<close>
   oops
 
-
-
+\<comment> \<open>TODO\<close>
 thm distinct_edges_of_vpath
 lemma distinct_edges_of_vpath':
   "distinct (p::'a list) \<Longrightarrow> distinct (edges_of_path p)"
@@ -215,8 +227,14 @@ lemma path_append':
   using assms
   by (simp add: path_iff_dpath edge_iff_edge_1 append_dpath)
 
+\<comment> \<open>TODO\<close>
 thm edges_of_path_append
 thm edges_of_path_append_2
+lemma edges_of_path_append_2':
+  assumes "(p'::'a list) \<noteq> []"
+  shows "edges_of_path (p @ p') = edges_of_path (p @ [hd p']) @ edges_of_path p'"
+  apply (simp add: edges_of_path_eq)
+  oops
 thm edges_of_path_append_3
 
 thm path_suff
@@ -233,13 +251,13 @@ fun rev_pair :: "('a \<times> 'b) \<Rightarrow> ('b \<times> 'a)" where
 lemma rev_pair_set: "undirected (u, v) = undirected (rev_pair (u, v))"
   by auto
 
+lemma edges_of_dpath_append: "edges_of_dpath (p @ [u, v]) = edges_of_dpath (p @ [u]) @ [(u, v)]"
+  by (induction p rule: edges_of_dpath.induct) auto
 
 lemma edges_of_dpath_rev:
   "rev (edges_of_dpath p) = map rev_pair (edges_of_dpath (rev p))"
-  apply (induction p rule: edges_of_dpath.induct)
-    apply auto
-  apply (smt edges_of_dpath.simps(2) edges_of_dpath.simps(3) edges_of_dpath_append_2 list.sel(1) list.simps(3) list.simps(8) list.simps(9) map_eq_append_conv rev_pair.simps)
-  done
+  by (induction p rule: edges_of_dpath.induct)
+     (auto simp: edges_of_dpath_append)
 
 thm edges_of_path_rev
 lemma "rev (edges_of_path (p::'a list)) = edges_of_path (rev p)"

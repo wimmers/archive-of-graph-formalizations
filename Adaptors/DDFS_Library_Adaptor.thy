@@ -6,6 +6,7 @@ theory DDFS_Library_Adaptor
 begin
 
 subsection \<open>Digraph to DDFS\<close>
+text \<open>lemmas from DDFS to Noschinski\<close>
 context pre_digraph
 begin
 
