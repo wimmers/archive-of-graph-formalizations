@@ -26,6 +26,7 @@ lemma arc_iff: "u \<rightarrow>\<^bsub>E\<^esub> v \<longleftrightarrow> (\<exis
 fun is_arc_for_pair where
   "is_arc_for_pair a (u,v) = (a \<in> arcs G \<and> tail G a = u \<and> head G a = v)"
 
+text \<open>We cannot reconstruct the arc from its ends without the choice operator.\<close>
 definition arc_from_ends :: "('a \<times> 'a) \<Rightarrow> 'b" where
   "arc_from_ends uv \<equiv> (SOME a. is_arc_for_pair a uv)"
 
@@ -88,6 +89,21 @@ lemma awalk_imp_awalk_map_arc_to_ends:
   unfolding awalk_def Noschinski_to_DDFS.awalk_def E_def
   by (auto intro: dominatesI cas_imp_map_arc_to_ends_cas)
 
+lemma awalk_map_arc_to_ends_imp_awalk:
+  assumes "set p \<subseteq> arcs G"
+  assumes "Noschinski_to_DDFS.awalk E u (map (arc_to_ends G) p) v"
+  shows "awalk u p v"
+  using assms
+  unfolding awalk_def Noschinski_to_DDFS.awalk_def
+  by (auto simp: dVs_subset_verts cas_iff_cas)
+
+lemma awalk_iff_awalk:
+  assumes "u \<in> dVs E"
+  assumes "set p \<subseteq> arcs G"
+  shows "Noschinski_to_DDFS.awalk E u (map (arc_to_ends G) p) v \<longleftrightarrow> awalk u p v"
+  using assms awalk_imp_awalk_map_arc_to_ends awalk_map_arc_to_ends_imp_awalk
+  by blast
+
 lemma cas_imp_map_arc_from_ends_cas:
   assumes "set p \<subseteq> E"
   shows "Noschinski_to_DDFS.cas u p v \<Longrightarrow> cas u (map arc_from_ends p) v"
@@ -121,7 +137,7 @@ lemma awalk_map_arc_from_ends_imp_awalk:
   unfolding Noschinski_to_DDFS.awalk_def awalk_def
   by (auto simp add: cas_iff_cas')
 
-lemma awalk_iff_awalk:
+lemma awalk_iff_awalk':
   assumes "u \<in> dVs E"
   assumes "set p \<subseteq> E"
   shows "awalk u (map arc_from_ends p) v \<longleftrightarrow> Noschinski_to_DDFS.awalk E u p v"
@@ -129,7 +145,7 @@ lemma awalk_iff_awalk:
 
 
 text \<open>
-  For this direction, we have to make sure the walk is not empty.
+  \<^term>\<open>vwalk\<close> requires non-emptiness.
 \<close>
 lemma dpath_imp_vwalk:
   "dpath E (u # xs) \<Longrightarrow> vwalk (u # xs) G"
@@ -137,25 +153,20 @@ lemma dpath_imp_vwalk:
      (auto simp: dVs_subset_verts dominates_iff)
 
 text \<open>
-  For this direction, we have to make sure there is at least an arc in the walk.
-  Or we could add an assumption \<^term>\<open>u \<in> dVs E\<close>.
+  Singleton \<^term>\<open>[u]\<close> with a disconnected vertex is also a \<^term>\<open>vwalk\<close>.
 \<close>
 lemma vwalk_imp_dpath:
-  "vwalk (u # v # xs) G \<Longrightarrow> dpath E (u # v # xs)"
-  by (induction xs arbitrary: u v)
+  assumes "u \<in> dVs E"
+  shows "vwalk (u # xs) G \<Longrightarrow> dpath E (u # xs)"
+  using assms
+  by (induction xs arbitrary: u)
      (auto simp: dominates_iff dVsI)
 
 lemma vwalk_iff:
-  "vwalk (u # v # xs) G \<longleftrightarrow> dpath E (u # v # xs)"
-  using vwalk_imp_dpath dpath_imp_vwalk by blast
-
-\<comment> \<open>With no disconnected vertices, a stronger version is possible.\<close>
-lemma vwalk_iff':
-  assumes "verts G = dVs E"
+  assumes "u \<in> dVs E"
   shows "vwalk (u # xs) G \<longleftrightarrow> dpath E (u # xs)"
-  by (auto simp: dpath_imp_vwalk)
-     (induction xs arbitrary: u; auto simp: assms dominates_iff)
-  
+  using assms vwalk_imp_dpath dpath_imp_vwalk by blast
+
 end
 
 context nomulti_digraph

@@ -3,4 +3,5 @@
 .hg
 output/*
 
-Ports/output/document/*
+**/output/document/*
+**/\#*\#

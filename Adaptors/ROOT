@@ -1,0 +1,10 @@
+session Adaptors = "AGF" +
+  options [document = pdf, document_output = "output", quick_and_dirty]
+  sessions Ports
+  theories
+    Adaptors_Summary
+  theories [document = false]
+    DDFS_Berge_Adaptor
+    DDFS_Library_Adaptor
+  document_files
+    "root.tex"
