@@ -68,7 +68,11 @@ lemma walk_betw_iff_dpath_bet:
 
 
 subsection \<open>Lemmas about relation of \<^term>\<open>edges_of_path\<close> and \<^term>\<open>edges_of_dpath\<close>\<close>
-text \<open>The way edges_of_path and edges_of_dpath are related makes it hard to \<close>
+text \<open>
+  \<^term>\<open>edges_of_path\<close> gives a list of doubleton sets, whereas \<^term>\<open>edges_of_dpath\<close> gives
+  a list of pairs. Dealing with the interaction between these doubleton sets and pairs
+  is the greatest challenge in this adaptor.
+\<close>
 fun undirected :: "'a \<times> 'a \<Rightarrow> 'a set" where
   "undirected (u, v) = {u, v}"
 
@@ -199,7 +203,7 @@ lemma distinct_edges_of_vpath':
   "distinct (p::'a list) \<Longrightarrow> distinct (edges_of_path p)"
   apply (drule distinct_edges_of_dpath)
   apply (auto simp: edges_of_path_eq) nitpick 
-  oops
+  sorry
 
 thm distinct_edges_of_paths_cons
 lemma distinct_edges_of_paths_cons':

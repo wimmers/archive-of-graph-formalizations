@@ -2,7 +2,6 @@ theory Adaptors_Summary
   imports
     DDFS_Berge_Adaptor
     DDFS_Library_Adaptor
-    AGF.TA_Graph_Library_Adaptor
 begin
 
 text \<open>
@@ -12,7 +11,7 @@ text \<open>
   concepts and then using existing lemmas from one representation to obtain them for the other.
   In this work specifically an adaptor from graph representation A to graph representation B works
   in the following way:
-    \<^enum> take a graph (as represented in) A
+    \<^enum> take a graph (as represented) in A
     \<^enum> build an equivalent graph in B
     \<^enum> prove relationship of fundamental concepts -- this typically means proving equalities (of e.g.\ 
       the notion of reachability)
@@ -56,8 +55,7 @@ text \<open>
   reconstructing an arc from its ends is not trivial. Arcs in Graph-Theory will be referred to as
   abstract arcs in the following.
 
-  This leads to two possible ways of how to deal with the proof of equality of arc-walks
-  \<^footnote>\<open>If this can still be regarded as an equality is questionable.\<close>:
+  This leads to two possible ways of how to deal with the proof of equality of arc-walks:
     \<^enum> Start with an arc-walk in Graph-Theory, i.e.\ a list of abstract arcs. An arc-walk in DDFS
       can then be obtained by mapping each arc to its ends with \<^term>\<open>arc_to_ends\<close>.
     \<^enum> Start with an arc-walk in DDFS, i.e.\ a list of pairs. As mentioned above, reconstructing the
@@ -66,7 +64,7 @@ text \<open>
 
   Both of these approaches exhibit some problems which essentially force us to introduce (strong)
   assumptions to our lemmas. In both cases @{command nitpick} was a really helpful tool by finding 
-  counter-examples to uncover these additional assumptions.
+  counter-examples to uncover these additionally necessary assumptions.
 \<close>
 subsubsection \<open>The \<^term>\<open>arc_to_ends\<close> approach\<close>
 text \<open>
@@ -130,7 +128,7 @@ text \<open>
   the vertices of the DDFS graph and the vertices of the original graph.
 
   The only small nuisances are (once more) the implicit vertex set of DDFS and the fact that the
-  definition of vertex walk differs on the treatment of empty lists.
+  definition of vertex walks differs on the treatment of empty lists.
 \<close>
 thm wf_digraph.vwalk_iff
 
@@ -144,10 +142,10 @@ text \<open>
   how sensible it is to implement the adaptor in this direction (at least for arc-walks), as we
   cannot prove all the properties of arc-walks (for multigraphs) in DDFS anyways.
 
-  For vertex walk a different picture is drawn, as they work conceptually the same way in both
+  For vertex walks a different picture is drawn, as they work conceptually the same way in both
   formalizations. It highlights the more nuanced differences, though. The most prominent being the
   implicit vs.\ explicit vertex set. While an explicit vertex set allows disconnected vertices, in
-  general some kind of well-formedness condition for the arcs is required. An implicit vertex set
+  general some kind of well-formedness condition on the arcs has to be imposed. An implicit vertex set
   on the other hand does not impose any additional conditions, but disconnected vertices are not 
   easily representable. If this trade-off is better the one way or the other has to be considered
   on a case by case basis. Similar reasoning can be applied to the question if an empty walk is
@@ -160,11 +158,46 @@ text \<open>
   to Graph-Theory graphs. This direction works smoothly, as the more expressive Graph-Theory easily
   accommodates DDFS graphs. Constructing the graph and all the proofs for the fundamental concepts
   are straightforward. This adaptor can in some sense be seen as a special case of
-  \<^theory>\<open>Graph_Theory.Pair_Digraph\<close> with a pracitcally implicit vertex set.
+  \<^theory>\<open>Graph_Theory.Pair_Digraph\<close> with a practically implicit vertex set.
 
   This direction appears to be more useful and straightforward, as it allows to easily reuse lemmas
   from a more powerful formalization. Hence, in a context where this additional expressiveness is
   not required, one can easily switch to a more manageable and conceptually simpler representation.
 \<close>
+
 section \<open>Berge to DDFS\<close>
+text \<open>
+  The second adaptor is between the undirected \<^theory>\<open>AGF.Berge\<close> representation (i.e.\ a graph is a
+  set of sets) and DDFS. The main goal of this endeavour was to evaluate how feasible it is to derive
+  lemmas about undirected graphs from lemmas about symmetric graphs. As before, building the (now 
+  symmetric) DDFS graph from the undirected representation is straightforward. Proving fundamental
+  relations between vertices, edges and walks also does not pose a challenge. Obtaining more advanced
+  lemmas about these concepts for the undirected case afterwards works out nicely as well.
+
+  However, big parts of the Berge formalization deal with the edges in a walk 
+  (cf.\ \<^term>\<open>edges_of_path\<close>), which is essentially a list of two-element sets. When defining this
+  for the DDFS case this becomes a list of pairs. While formulating (mostly) equivalent lemmas 
+  in this form is possible, the relation between \<^term>\<open>edges_of_path\<close> and \<^term>\<open>edges_of_dpath\<close>
+  already involves mapping each pair back to a two-element set.
+\<close>
+thm graph_abs.edges_of_path_eq
+text \<open>
+  Proving advanced lemmas in the set formulation from the ones in the pair formulation in some cases
+  becomes somewhat of a hassle, e.g.;
+\<close>
+thm graph_abs.edges_of_path_for_inner'
+text \<open>
+  or straight-up impossible:
+\<close>
+thm graph_abs.distinct_edges_of_vpath'
+
+subsection \<open>Conclusion\<close>
+text \<open>
+  Building an adaptor from an undirected to a (symmetric) directed representation for graphs is
+  certainly possible and useful, depending on the concepts one wants to argue about. As long as
+  the arguments mainly follow from whether two vertices are connected or not, the transition
+  between an undirected graph and a symmetric directed graph works smoothly. On the other hand,
+  when the argumentation is mainly done on the basis of concrete edges, working with the adaptor
+  can become awkward rather quickly.
+\<close>
 end

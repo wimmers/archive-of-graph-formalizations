@@ -123,7 +123,7 @@ thm edges_of_path_append
 lemma edges_of_dpath_append: obtains ep where "edges_of_dpath (p @ p') = ep @ edges_of_dpath p'"
   by (cases "p' = []") (auto dest: edges_of_dpath_append_2)
 
-lemma append_butlast_last_assoc: "p \<noteq> [] \<Longrightarrow> butlast p @ last p # p' = p @ p'"
+lemma append_butlast_last_cancel: "p \<noteq> [] \<Longrightarrow> butlast p @ last p # p' = p @ p'"
   by simp
 
 thm edges_of_path_append_3
@@ -131,7 +131,7 @@ lemma edges_of_dpath_append_3:
   assumes "p \<noteq> []"
   shows "edges_of_dpath (p @ p') = edges_of_dpath p @ edges_of_dpath (last p # p')"
   using assms
-  by (auto simp flip: append_butlast_last_assoc simp: edges_of_dpath_append_2)
+  by (auto simp flip: append_butlast_last_cancel simp: edges_of_dpath_append_2)
 
 thm path_suff path_pref
 thm append_dpath_suff append_dpath_pref
