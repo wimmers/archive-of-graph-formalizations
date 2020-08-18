@@ -114,8 +114,8 @@ lemma edges_of_path_nth:
   by (auto dest: Suc_le_length_le_length_edges_of_dpath simp: edges_of_path_eq)
 
 lemma edges_of_path_nth_sym:
-  "Suc i < length (p::'a list) \<Longrightarrow> (u, v) = edges_of_dpath p ! i \<Longrightarrow> {u, v} = edges_of_path p ! i"
-  by (auto intro!: edges_of_path_nth[symmetric])
+  "edges_of_dpath p ! i = (u, v) \<Longrightarrow> Suc i < length (p::'a list) \<Longrightarrow>  edges_of_path p ! i = {u, v}"
+  by (auto intro!: edges_of_path_nth)
 
 lemma not_in_edges_of_path_not_in_edges_of_dpath:
   assumes "{u, v} \<notin> set (edges_of_path (p::'a list))"
@@ -149,37 +149,27 @@ lemma edges_of_path_index':
      (auto simp: edges_of_path_nth)
 
 lemma edges_of_dpath_for_inner'':
-  assumes "i \<noteq> 0" "v = p ! i" "Suc i < length p"
-  obtains u where "(u, v) = edges_of_dpath p ! (i - 1)"
+  assumes "i \<noteq> 0" "p ! i = v" "i < length p"
+  obtains u where "edges_of_dpath p ! (i - 1) = (u, v)"
   using assms by (simp add: edges_of_dpath_index)
+
+thm 
+edges_of_path_nth_sym edges_of_path_index'
+
+edges_of_dpath_for_inner''
 
 \<comment> \<open>TODO\<close>
 thm edges_of_path_for_inner
+(*lemma "f l = x \<Longrightarrow> P"
+  apply safe_step*)
 lemma edges_of_path_for_inner':
-  assumes "v = p ! i" "Suc i < length (p::'a list)"
-  obtains u w where "{u, v} = edges_of_path p ! (i - 1)" "{v, w} = edges_of_path p ! i"
+  assumes "p ! i = v" "Suc i < length (p::'a list)"
+  obtains u w where "edges_of_path p ! (i - 1) = {u, v}" "edges_of_path p ! i = {v, w}"
   using assms
-  apply (cases "i = 0")
-  subgoal
-    by (frule edges_of_dpath_for_inner)
-       (auto dest: edges_of_path_nth_sym)
-  subgoal
-    apply (frule edges_of_dpath_for_inner'')
-    apply auto
-       apply (frule edges_of_dpath_for_inner)
-      apply auto
-    apply (frule edges_of_path_nth_sym)
-       apply (auto dest!: Suc_lessD Suc_pred')
-    apply (auto dest!: subst[of i "Suc (i - Suc 0)" "\<lambda>j. j < length p"] edges_of_path_nth_sym)
-    done
-  done
+  by (cases i) (fastforce simp: edges_of_path_index')+
 
 lemma last_Cons_nonempty: "p \<noteq> [] \<Longrightarrow> Suc 0 < length (last p # p)"
   by simp
-
-\<comment> \<open>TODO\<close>
-lemma hd_last_edges_of_dpath: "p \<noteq> [] \<longleftrightarrow> (\<exists>u v. last (edges_of_dpath (a # p)) = (u, v) \<and> (u, v) \<in> set (edges_of_dpath (a # p)))"
-  sorry
 
 thm Berge.hd_edges_neq_last
 lemma hd_edges_neq_last':
@@ -187,15 +177,7 @@ lemma hd_edges_neq_last':
   assumes "{hd (p::'a list), last p} \<notin> set (edges_of_path p)" "hd p \<noteq> last p" "p \<noteq> []"
   shows "hd (edges_of_path (last p # p)) \<noteq> last (edges_of_path (last p # p))"
   using assms
-  apply (auto dest!: not_in_edges_of_path_not_in_edges_of_dpath hd_edges_neq_last)
-  apply (cases p)
-   apply (simp_all)
-  subgoal for a list
-  using assms
-   apply (auto split: if_splits simp: hd_last_edges_of_dpath[of list])
-\<comment> \<open>case analysis on p for hd\<close>
-\<comment> \<open>conv lemma for last (...)\<close>
-  oops
+  by (induction p) (auto elim: edges_of_path.elims simp: insert_commute)
 
 \<comment> \<open>TODO\<close>
 thm distinct_edges_of_vpath
@@ -233,13 +215,19 @@ lemma path_append':
 
 \<comment> \<open>TODO\<close>
 thm edges_of_path_append
+lemma edges_of_path_append': "\<exists>ep. edges_of_path ((p::'a list) @ p') = ep @ edges_of_path p'"
+  by(auto simp add: edges_of_path_eq intro: exE[OF edges_of_dpath_append, of p p'])
+
 thm edges_of_path_append_2
 lemma edges_of_path_append_2':
   assumes "(p'::'a list) \<noteq> []"
   shows "edges_of_path (p @ p') = edges_of_path (p @ [hd p']) @ edges_of_path p'"
-  apply (simp add: edges_of_path_eq)
-  oops
+  by (simp add: edges_of_path_eq edges_of_dpath_append_2[OF assms])
+
 thm edges_of_path_append_3
+lemma edges_of_path_append_3:
+  "(p::'a list) \<noteq> [] \<Longrightarrow> edges_of_path (p @ p') = edges_of_path p @ edges_of_path (last p # p')"
+  by (simp add: edges_of_path_eq edges_of_dpath_append_3)
 
 thm path_suff
 lemma path_suff': "path E (p1 @ p2) \<Longrightarrow> path E p2"
@@ -447,7 +435,6 @@ lemma path_edges_of_path_refl':
   by (auto dest!: dpath_edges_of_dpath_refl 
            intro: dpath_subset[OF _ set_edges_of_dpath_subset_D] 
            simp: path_induced.subgraph.path_iff_dpath )
-
 
 thm edges_of_path_Vs
 lemma edges_of_path_Vs': "Vs edge_set \<subseteq> set p"

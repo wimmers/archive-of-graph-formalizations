@@ -33,14 +33,14 @@ lemma edges_of_dpath_length: "length (edges_of_dpath p) = length p - 1"
 thm edges_of_path_for_inner
 text \<open>With the given assumptions we can only obtain an outgoing edge from \<^term>\<open>v\<close>.\<close>
 lemma edges_of_dpath_for_inner:
-  assumes "v = p ! i" "Suc i < length p"
-  obtains w where "(v, w) = edges_of_dpath p ! i"
+  assumes "p ! i = v" "Suc i < length p"
+  obtains w where "edges_of_dpath p ! i = (v, w)"
   by (simp add: assms edges_of_dpath_index)
 
 
 text \<open>For an incoming edge we need an additional assumption (\<^term>\<open>i > 0\<close>).\<close>
 lemma edges_of_dpath_for_inner':
-  assumes "v = p ! (Suc i)" "Suc i < length p"
+  assumes "p ! (Suc i) = v" "Suc i < length p"
   obtains u where "(u, v) = edges_of_dpath p ! i"
   using assms by (simp add: edges_of_dpath_index)
 
@@ -120,7 +120,7 @@ lemma edges_of_dpath_append_2:
 
 
 thm edges_of_path_append
-lemma edges_of_dpath_append: obtains ep where "edges_of_dpath (p @ p') = ep @ edges_of_dpath p'"
+lemma edges_of_dpath_append: "\<exists>ep. edges_of_dpath (p @ p') = ep @ edges_of_dpath p'"
   by (cases "p' = []") (auto dest: edges_of_dpath_append_2)
 
 lemma append_butlast_last_cancel: "p \<noteq> [] \<Longrightarrow> butlast p @ last p # p' = p @ p'"
@@ -143,7 +143,7 @@ lemma dpath_vertex_has_edge:
   assumes "length p \<ge> 2" "v \<in> set p"
   obtains e u where "e \<in> set (edges_of_dpath p)" "e = (u, v) \<or> e = (v, u)"
 proof -
-  obtain i where idef: "v = p ! i" "i < length p" 
+  obtain i where idef: "p ! i = v" "i < length p" 
     using assms(2) by (auto simp: in_set_conv_nth)
   have eodplength': "Suc (length (edges_of_dpath p)) = length p"
     using assms(1) by (auto simp: edges_of_dpath_length)
@@ -160,14 +160,14 @@ proof -
   next
     case gt
     then obtain w where w: "(v, w) = edges_of_dpath p ! i"
-      by (auto elim: edges_of_dpath_for_inner[OF idef(1) gt(2)])
+      by (auto elim: edges_of_dpath_for_inner[OF idef(1)])
     have "i < length (edges_of_dpath p)"
       using eodplength' gt(2) by auto
     then show ?thesis using that w[symmetric] nth_mem by blast
   next
     case last
     then obtain w where w: "(w, v) = edges_of_dpath p ! (i - 1)"
-      using edges_of_dpath_for_inner'[of v p "i - 1"] eodplength' eodplength
+      using edges_of_dpath_for_inner'[of p "i - 1"] eodplength' eodplength
       by (auto simp: idef)
     have "i - 1 < length (edges_of_dpath p)"
       using eodplength eodplength' last by linarith
@@ -225,7 +225,7 @@ lemma last_in_edge:
 thm edges_of_path_append_subset
 lemma edges_of_dpath_append_subset:
   shows "set (edges_of_dpath p') \<subseteq> set (edges_of_dpath (p @ p'))"
-  by (auto intro: edges_of_dpath_append[of p p'])
+  by (fastforce intro: exE[OF edges_of_dpath_append, of p p'])
 
 thm walk_betw_def
 term dpath_bet
