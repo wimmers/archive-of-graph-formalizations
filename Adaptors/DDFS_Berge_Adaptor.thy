@@ -442,4 +442,12 @@ lemma edges_of_path_Vs': "Vs edge_set \<subseteq> set p"
   by (simp add: path_induced.subgraph.Vs_edges_of_path edges_of_dpath_dVs)
 end
 
+lemma graph_abs_mono: "graph_abs E \<Longrightarrow> F \<subseteq> E \<Longrightarrow> graph_abs F"
+  unfolding graph_abs_def
+  by (auto simp: Vs_subset rev_finite_subset)
+
+lemma graph_abs_insert: "u \<noteq> v \<Longrightarrow> graph_abs E \<Longrightarrow> graph_abs (insert {u,v} E)"
+  unfolding graph_abs_def
+  by (auto simp: Vs_def)
+
 end

@@ -2,7 +2,6 @@ theory Berge_Kruskal_Arc_Walk
   imports
     AGF.Berge
     Kruskal.Kruskal
-    Adaptors.DDFS_Berge_Adaptor
     Adaptors.Berge_UGraph_Adaptor
 begin
 
@@ -61,31 +60,23 @@ abbreviation "connected_on E' V \<equiv> connected E' \<inter> (V \<times> V)"
 lemma connected_on_eq: "connected_on E' V = uGraph.uconnected_on (ugraph_of E') V"
   by auto
 
+
 context graph_abs
 begin
 
 lemma ugraph_of_uGraph[simp]: "uGraph (ugraph_of E)"
+unfolding ugraph_of_def
 proof (unfold_locales, goal_cases)
   case (1 e)
-  then show ?case sorry
-next
-  case 2
-  then show ?case sorry
-qed
-(* interpretation ugraph_of: uGraph "ugraph_of E"
-proof (unfold_locales, goal_cases)
-  case (1 e)
-  then show ?case 
-    unfolding ugraph_of_def 
-    using graph 
-    by (force dest!: edge_ugraph_ofD)
+  then show ?case
+    using graph
+    by fastforce
 next
   case 2
   then show ?case
-    unfolding ugraph_of_def
     using finite_E
-    sorry    
-qed *)
+    sorry
+qed
 
 lemma vertices_eq: "Vs E = \<Union>(set_uprod ` (ugraph_of E))"
   unfolding ugraph_of_def Vs_def
