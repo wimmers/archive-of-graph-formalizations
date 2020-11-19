@@ -109,6 +109,30 @@ lemma awalkI_apath:
   assumes "apath E u p v" shows "awalk E u p v"
   using assms by (simp add: apath_def)
 
+lemma set_awalk_verts_cas:
+  assumes "cas u p v"
+  shows "set (awalk_verts u p) = {u} \<union> set (map fst p) \<union> set (map snd p)"
+  using assms
+  by (induction p arbitrary: u) (fastforce simp: image_iff)+
+
+lemma set_awalk_verts_not_Nil_cas:
+  assumes "cas u p v" "p \<noteq> []"
+  shows "set (awalk_verts u p) = set (map fst p) \<union> set (map snd p)"
+proof -
+  have "u \<in> set (map fst p)" using assms by (cases p) auto
+  with assms show ?thesis by (auto simp: set_awalk_verts_cas)
+qed
+
+lemma set_awalk_verts:
+  assumes "awalk E u p v"
+  shows "set (awalk_verts u p) = {u} \<union> set (map fst p) \<union> set (map snd p)"
+  using assms by (intro set_awalk_verts_cas) blast
+
+lemma set_awalk_verts_not_Nil:
+  assumes "awalk E u p v" "p \<noteq> []"
+  shows "set (awalk_verts u p) = set (map fst p) \<union> set (map snd p)"
+  using assms by (intro set_awalk_verts_not_Nil_cas) blast
+
 lemma
   awhd_of_awalk: "awalk E u p v \<Longrightarrow> awhd u p = u" and
   awlast_of_awalk: "awalk E u p v \<Longrightarrow> NOMATCH (awlast u p) v \<Longrightarrow> awlast u p = v"
@@ -193,6 +217,20 @@ proof -
   moreover from * have "awalk_verts y r = y # ys"
     unfolding q_def r_def using assms by (auto simp: awalk_verts_drop_conv not_less)
   ultimately show ?thesis by (intro that) auto
+qed
+
+lemma awalk_decomp:
+  assumes "awalk E u p v"
+    and "w \<in> set (awalk_verts u p)"
+  shows "\<exists>q r. p = q @ r \<and> awalk E u q w \<and> awalk E w r v"
+proof -
+  from assms have "cas u p v" by auto
+  moreover from assms obtain xs ys where
+    "awalk_verts u p = xs @ w # ys" by (auto simp: in_set_conv_decomp)
+  ultimately
+  obtain q r where "cas u q w" "cas w r v" "p = q @ r" "awalk_verts u q = xs @ [w]"
+    by (auto intro: awalk_decomp_verts)
+  with assms show ?thesis by auto
 qed
 
 lemma awalk_not_distinct_decomp:
@@ -397,6 +435,10 @@ lemma adj_in_dVs:
 lemma reachable_refl[intro!, Pure.intro!, simp]: "v \<in> dVs E \<Longrightarrow> v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
   unfolding reachable_def by auto
 
+lemma reachable_trans[trans]:
+  assumes "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v" "v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w" shows "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
+  using assms unfolding reachable_def by (rule rtrancl_on_trans)
+
 lemma reachable_induct[consumes 1, case_names base step]:
   assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
     and cases: "u \<in> dVs E \<Longrightarrow> P u"
@@ -472,6 +514,20 @@ next
   finally show ?thesis .
 qed
 
+lemma awalk_verts_reachable_from:
+  assumes "awalk E u p v" "w \<in> set (awalk_verts u p)" shows "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
+proof -
+  obtain s where "awalk E u s w" using awalk_decomp[OF assms] by blast
+  then show ?thesis by (auto simp: reachable_awalk)
+qed
+
+lemma awalk_verts_reachable_to:
+  assumes "awalk E u p v" "w \<in> set (awalk_verts u p)" shows "w \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+proof -
+  obtain s where "awalk E w s v" using awalk_decomp[OF assms] by blast
+  then show ?thesis by (auto simp: reachable_awalk)
+qed
+
 definition cycle :: "('a \<times> 'a) set \<Rightarrow> 'a awalk \<Rightarrow> bool" where
   "cycle E p \<equiv> \<exists>u. awalk E u p u \<and> distinct (tl (awalk_verts u p)) \<and> p \<noteq> []"
 
@@ -481,11 +537,21 @@ definition subgraph :: "('a \<times> 'a) set \<Rightarrow> ('a \<times> 'a) set 
 lemma subgraphI[intro]:
   "H \<subseteq> G \<Longrightarrow> subgraph H G" by (simp add: subgraph_def)
 
+lemma subgraphD:
+  "subgraph H G \<Longrightarrow> H \<subseteq> G" by (simp add: subgraph_def)
+
+
 lemma subgraph_dVs: "subgraph H G \<Longrightarrow> dVs H \<subseteq> dVs G"
   by (auto simp: subgraph_def dVs_subset)
 
 lemma subgraph_dVs': "subgraph H G \<Longrightarrow> u \<in> dVs H \<Longrightarrow> u \<in> dVs G"
   by (auto dest: subgraph_dVs)
+
+lemma subgraphE[elim]:
+  assumes "subgraph H G"
+  obtains "dVs H \<subseteq> dVs G" "H \<subseteq> G"
+  using assms
+  by (auto dest: subgraph_dVs subgraphD)
 
 lemma subgraph_awalk_imp_awalk:
   assumes walk: "awalk H u p v"

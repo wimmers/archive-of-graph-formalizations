@@ -4,9 +4,11 @@ begin
 
 text \<open>Theory about digraphs\<close>
 
+type_synonym 'a dgraph = "('a \<times> 'a) set"
+
 definition "dVs dG \<equiv> \<Union> {{v1,v2} | v1 v2. (v1, v2) \<in> dG}"
 
-context fixes dG :: "('a \<times> 'a) set" begin
+context fixes dG :: "'a dgraph" begin
 inductive dpath where
   dpath0: "dpath []" |
   dpath1: "v \<in> dVs dG \<Longrightarrow> dpath [v]" |
