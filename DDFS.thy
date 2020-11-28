@@ -52,6 +52,9 @@ lemma induct_pcpl_2:
   "\<lbrakk>P []; \<And>x. P [x]; \<And>x y. P [x,y]; \<And>x y z. P [x,y,z]; \<And>w x y z zs. P zs \<Longrightarrow> P (w # x # y # z # zs)\<rbrakk> \<Longrightarrow> P xs"
   by induction_schema (pat_completeness, lexicographic_order)
 
+lemma dVs_empty[simp]: "dVs {} = {}"
+  by (simp add: dVs_def)
+
 lemma dVsI:
   assumes "(a, v) \<in> dG" shows "a \<in> dVs dG" and "v \<in> dVs dG"
   using assms unfolding dVs_def by auto

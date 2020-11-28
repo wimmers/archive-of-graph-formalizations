@@ -190,57 +190,62 @@ end
 
 subsection \<open>From DDFS to Digraph\<close>
 locale ddfs =
-  fixes E :: "('a \<times> 'a) set"
+  fixes E :: "'a dgraph"
 begin
 
-definition "G \<equiv> \<lparr>verts = dVs E, arcs = E, tail = fst, head = snd\<rparr>"
-definition "G\<^sub>p = \<lparr>pverts = dVs E, arcs = E\<rparr>"
+definition "digraph_of \<equiv> \<lparr>verts = dVs E, arcs = E, tail = fst, head = snd\<rparr>"
+definition "pair_digraph_of = \<lparr>pverts = dVs E, arcs = E\<rparr>"
 
-lemma G_pair_conv:
-  "with_proj G\<^sub>p = G"
-  unfolding G\<^sub>p_def G_def with_proj_def by simp
+lemma digraph_of_pair_conv:
+  "with_proj pair_digraph_of = digraph_of"
+  unfolding pair_digraph_of_def digraph_of_def with_proj_def by simp
 
-sublocale ddfs_digraph: nomulti_digraph G
-  by standard (auto simp: G_def arc_to_ends_def dVsI)
+sublocale ddfs_digraph: nomulti_digraph digraph_of
+  by standard (auto simp: digraph_of_def arc_to_ends_def dVsI)
 
-sublocale ddfs_pdigraph: pair_wf_digraph G\<^sub>p
-  using G_pair_conv ddfs_digraph.wf_digraph_axioms wf_digraph_wp_iff by fastforce
+lemma nomulti_digraph_digraph_of: "nomulti_digraph digraph_of" ..
+lemma wf_digraph_digraph_of: "wf_digraph digraph_of" ..
+
+sublocale ddfs_pdigraph: pair_wf_digraph pair_digraph_of
+  using digraph_of_pair_conv ddfs_digraph.wf_digraph_axioms wf_digraph_wp_iff by fastforce
+
+lemma pair_wf_digraph_pair_digraph_of: "pair_wf_digraph pair_digraph_of" ..
 
 lemma arc_to_ends_eq[simp]:
-  "arc_to_ends G = id"
-  by (auto simp add: G_def arc_to_ends_def)
+  "arc_to_ends digraph_of = id"
+  by (auto simp add: digraph_of_def arc_to_ends_def)
 
 lemma arcs_ends_eq[simp]:
-  "arcs_ends G = E"
-  unfolding arcs_ends_def arc_to_ends_eq by (simp add: G_def)
+  "arcs_ends digraph_of = E"
+  unfolding arcs_ends_def arc_to_ends_eq by (simp add: digraph_of_def)
 
 lemma dominates_iff[simp]:
-  "u \<rightarrow>\<^bsub>G\<^esub> v \<longleftrightarrow> (u, v) \<in> E"
+  "u \<rightarrow>\<^bsub>digraph_of\<^esub> v \<longleftrightarrow> (u, v) \<in> E"
   by simp
 
 lemma verts_eq[simp]:
-  "verts G = dVs E"
-  unfolding G_def by simp
+  "verts digraph_of = dVs E"
+  unfolding digraph_of_def by simp
 
 lemma arcs_eq[simp]:
-  "arcs G = E"
-  unfolding G_def by simp
+  "arcs digraph_of = E"
+  unfolding digraph_of_def by simp
 
 lemma tail_eq[simp]:
-  "tail G = fst"
-  unfolding G_def by simp
+  "tail digraph_of = fst"
+  unfolding digraph_of_def by simp
 
 lemma head_eq[simp]:
-  "head G = snd"
-  unfolding G_def by simp
+  "head digraph_of = snd"
+  unfolding digraph_of_def by simp
 
 lemma reachable_iff:
-  "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+  "u \<rightarrow>\<^sup>*\<^bsub>digraph_of\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
   unfolding reachable_def Noschinski_to_DDFS.reachable_def
   by simp
 
 lemma reachable1_iff:
-  "u \<rightarrow>\<^sup>+\<^bsub>G\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
+  "u \<rightarrow>\<^sup>+\<^bsub>digraph_of\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
   by simp
 
 lemma cas_conv:
@@ -259,10 +264,14 @@ lemma awalk_iff:
   by (auto simp: cas_iff)
 
 lemma vwalk_iff:
-  "vwalk p G \<longleftrightarrow> p \<noteq> [] \<and> dpath E p"
+  "vwalk p digraph_of \<longleftrightarrow> p \<noteq> [] \<and> dpath E p"
   by (induction p rule: induct_list012) auto
 
-  
-
 end
+
+lemmas ddfs_library_adaptor_simps[simp] = ddfs.arc_to_ends_eq ddfs.arcs_ends_eq ddfs.dominates_iff
+  ddfs.verts_eq ddfs.arcs_eq ddfs.tail_eq ddfs.head_eq ddfs.nomulti_digraph_digraph_of
+  ddfs.wf_digraph_digraph_of ddfs.pair_wf_digraph_pair_digraph_of
+
+
 end
