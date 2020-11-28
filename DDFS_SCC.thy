@@ -19,36 +19,35 @@ definition max_subgraph :: "'a dgraph \<Rightarrow> ('a dgraph \<Rightarrow> boo
   "max_subgraph G P H \<equiv> subgraph H G \<and> P H \<and> (\<forall>H'. H' \<noteq> H \<and> subgraph H H' \<longrightarrow> \<not>(subgraph H' G \<and> P H'))"
 
 lemma "induced_subgraph H G \<Longrightarrow> induced_subgraph H' G \<Longrightarrow> dVs H \<subset> dVs H' \<longleftrightarrow> H \<subset> H'"
-  unfolding induced_subgraph_def induce_subgraph_def
-  apply (auto dest: dVs_subset)
-  using subset_eq by blast
+  unfolding induced_subgraph_def induce_subgraph_def subset_eq
+  by (auto dest: dVs_subset) blast
 
 definition sccs :: "'a dgraph \<Rightarrow> 'a dgraph set" where
   "sccs G \<equiv> {H. induced_subgraph H G \<and> strongly_connected H \<and> \<not>(\<exists>H'. induced_subgraph H' G
       \<and> strongly_connected H' \<and> H \<subset> H')}" \<comment> \<open>can we replace \<^term>\<open>dVs H \<subset> dVs H'\<close> with
-                                                                      \<^term>\<open>H \<subset> H'\<close>? yes - see lemma above\<close>
+                                                              \<^term>\<open>H \<subset> H'\<close>? yes - see lemma above\<close>
 
-definition sccs_verts :: "'a dgraph \<Rightarrow> 'a set set" where
-  "sccs_verts G \<equiv> {S. S \<noteq> {} \<and> (\<forall>u \<in> S. \<forall>v \<in> S. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v) \<and> (\<forall>u \<in> S. \<forall>v. v \<notin> S \<longrightarrow> \<not>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> \<not>v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u)}"
+definition sccs_dVs :: "'a dgraph \<Rightarrow> 'a set set" where
+  "sccs_dVs G \<equiv> {S. S \<noteq> {} \<and> (\<forall>u \<in> S. \<forall>v \<in> S. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v) \<and> (\<forall>u \<in> S. \<forall>v. v \<notin> S \<longrightarrow> \<not>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> \<not>v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u)}"
 
 definition scc_of :: "'a dgraph \<Rightarrow> 'a \<Rightarrow> 'a set" where
   "scc_of G u \<equiv> {v. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<and> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u}"
 
 
-lemma induce_subgraph_verts:
+lemma induce_subgraph_dVs:
   "dVs (G \<restriction> vs) \<subseteq> vs"
   by (auto simp: induce_subgraph_def dVs_def)
 
-lemma induce_subgraph_vertsD:
+lemma induce_subgraph_dVsD:
   "u \<in> dVs (G \<restriction> vs) \<Longrightarrow> u \<in> vs"
-  using induce_subgraph_verts by fast
+  using induce_subgraph_dVs by fast
 
 lemma induce_subgraph_verts':
   "dVs (G \<restriction> vs) = vs - {v \<in> vs. \<not>(\<exists>u \<in> vs. (u,v) \<in> G \<or> (v,u) \<in> G)}"
   unfolding dVs_def induce_subgraph_def
   by auto
 
-lemma in_induce_subgraph_vertsI:
+lemma in_induce_subgraph_dVsI:
   assumes "u \<in> vs"
     and  "\<exists>v \<in> vs. (u, v) \<in> G \<or> (v, u) \<in> G"
   shows "u \<in> dVs (G \<restriction> vs)"
@@ -56,17 +55,16 @@ lemma in_induce_subgraph_vertsI:
   unfolding induce_subgraph_def
   by (auto intro: dVsI)
 
-lemma in_induce_subgraph_vertsI_reachable:
+lemma in_induce_subgraph_dVsI_reachable:
   assumes "u \<in> S"
     and "v \<in> S"
-    and "S \<in> sccs_verts G"
-    and "u \<noteq> v"
+    and "S \<in> sccs_dVs G"
+    and "S \<noteq> {u}"
     and "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
   shows "u \<in> dVs (G \<restriction> S)" "v \<in> dVs (G \<restriction> S)"
-  using assms 
-   apply (auto intro!: in_induce_subgraph_vertsI simp: sccs_verts_def)
-   apply (smt converse_tranclE reachable1_reachable reachable_neq_reachable1 reachable_trans trancl.r_into_trancl)+
-  done
+  using assms
+  by (auto intro!: in_induce_subgraph_dVsI simp: sccs_dVs_def)
+     (metis (no_types, lifting) converse_tranclE reachable1_reachable reachable_neq_reachable1 trancl.intros(1) trancl_trans)+
 
 lemma induce_subgraph_of_subgraph_verts[simp]:
   "subgraph H G \<Longrightarrow> dVs (G \<restriction> dVs H) = dVs H"
@@ -84,6 +82,15 @@ lemma induced_induce: "induced_subgraph (G \<restriction> vs) G"
 lemma induced_subgraphD:
   "induced_subgraph H G \<Longrightarrow> H = G \<restriction> dVs H"
   unfolding induced_subgraph_def by simp
+
+lemma induce_subgraph_singleton_conv:
+  "v \<in> dVs (G \<restriction> {u}) \<longleftrightarrow> v = u \<and> (u,u) \<in> G"
+  unfolding induce_subgraph_def dVs_def
+  by auto
+
+lemma induce_subgraph_not_empty:
+  "u \<in> S \<Longrightarrow> v \<in> S \<Longrightarrow> (u,v) \<in> G \<Longrightarrow> G \<restriction> S \<noteq> {}"
+  unfolding induce_subgraph_def by blast
 
 
 subsection \<open>Basic lemmas\<close>
@@ -126,9 +133,9 @@ lemma in_sccsE[elim]:
   shows "P"
   using assms by (simp add: sccs_def)
 
-lemma sccs_verts_subset_dVs:
-  "S \<in> sccs_verts G \<Longrightarrow> S \<subseteq> dVs G"
-  unfolding sccs_verts_def 
+lemma sccs_dVs_subset_dVs:
+  "S \<in> sccs_dVs G \<Longrightarrow> S \<subseteq> dVs G"
+  unfolding sccs_dVs_def 
   by (auto dest: reachable_in_dVs)
 
 subsection \<open>Induced subgraphs\<close>
@@ -159,6 +166,8 @@ lemma induce_subgraph_mono:
   "S \<subseteq> T \<Longrightarrow> subgraph (G \<restriction> S) (G \<restriction> T)"
   by (auto simp: induce_subgraph_def)
 
+lemmas induce_subgraph_mono' = induce_subgraph_mono[simplified subgraph_def]
+
 lemma dominates_induce_subgraphD:
   "u \<rightarrow>\<^bsub>G \<restriction> S\<^esub> v \<Longrightarrow> u \<rightarrow>\<^bsub>G\<^esub> v"
   using subgraph_def subgraph_induce_subgraph by auto
@@ -179,11 +188,12 @@ lemma reachable_induce_ss:
 lemma awalk_induce:
   assumes "awalk G u p v" "set (awalk_verts u p) \<subseteq> S" "p \<noteq> []"
   shows "awalk (G \<restriction> S) u p v"
-  using assms
   unfolding awalk_def
-  apply (auto simp: set_awalk_verts_not_Nil_cas cas_simp image_subset_iff intro!: in_induce_subgraph_vertsI)
-  using hd_in_set apply force
-  by (metis (no_types, lifting) CollectI case_prodI fst_conv induce_subgraph_def snd_conv subsetD)
+  using assms
+  apply (auto simp: hd_in_awalk_verts set_awalk_verts image_subset_iff intro!: in_induce_subgraph_dVsI)
+   apply (metis (mono_tags, lifting) awalkE' cas_simp list.set_sel(1) prod.collapse subsetD)
+  by (metis (no_types, lifting) CollectI awalkE' case_prodI fst_conv induce_subgraph_def snd_conv subsetD)
+
 
 lemma induced_subgraphI':
   assumes subg: "subgraph H G"
@@ -210,8 +220,8 @@ proof -
     then have "H' \<subseteq> {(u,v) \<in> G. u \<in> dVs H \<and> v \<in> dVs H}"  
       unfolding subgraph_def by (auto simp: dVsI)
   }
-  then show ?thesis using induced_subgraphI'[of H G] apply (auto simp: induced_imp_subgraph)
-    using subset_eq by blast
+  then show ?thesis using induced_subgraphI'[of H G]
+    by (auto simp: induced_imp_subgraph induced_subgraph_def induce_subgraph_def simp: subgraphI)
 qed
 
 subsection \<open>Maximal subgraphs\<close>
@@ -239,35 +249,20 @@ lemma induced_subgraphI_arc_mono:
   assumes "max_subgraph G P H"
   assumes "arc_mono P"
   shows "induced_subgraph H G"
-  (* by (metis (no_types, lifting) DDFS_SCC.induced_subgraph_def arc_mono_def assms assms induce_subgraph_of_subgraph_verts max_subgraph_def subgraph_induce_subgraph subgraph_induce_subgraphI2) *)
-proof -
-  have "subgraph H (G \<restriction> dVs H)" "subgraph (G \<restriction> dVs H) G" "dVs H = dVs (G \<restriction> dVs H)" "P H"
-    using assms by (auto simp: max_subgraph_def subgraph_induce_subgraphI2 subgraph_induce_subgraph)
-  moreover
-  then have "P (G \<restriction> dVs H)" using assms by (auto simp: arc_mono_def)
-  ultimately
-  have "max_subgraph G P (G \<restriction> dVs H)"
-    by (metis assms max_subgraph_def)
-  then have "H = G \<restriction> dVs H"
-    using \<open>subgraph H (G \<restriction> dVs H)\<close> assms max_subgraph_subg_eq by blast
-  then show ?thesis using induced_subgraph_def by blast
-qed
+  using assms
+  unfolding induced_subgraph_def arc_mono_def max_subgraph_def
+  by (metis induce_subgraph_of_subgraph_verts subgraph_induce_subgraph subgraph_induce_subgraphI2)
+
+lemma subgraph_induced_subgraph_neq:
+  assumes "induced_subgraph H G" "subgraph H H'" "H \<noteq> H'"
+  shows "\<not>subgraph H' G \<or> dVs H' \<noteq> dVs H"
+  using assms
+  by (auto simp: induced_subgraph_altdef subgraph_def)
 
 lemma induced_subgraph_altdef2:
   "induced_subgraph H G \<longleftrightarrow> max_subgraph G (\<lambda>H'. dVs H' = dVs H) H" (is "?L \<longleftrightarrow> ?R")
-proof
-  assume ?L
-  moreover
-  { fix H' assume "induced_subgraph H G" "subgraph H H'" "H \<noteq> H'"
-    then have "\<not>(subgraph H' G \<and> dVs H' = dVs H)"
-      by (auto simp: induced_subgraph_altdef subgraph_def)
-  }
-  ultimately show ?R by (auto simp: max_subgraph_def dest: induced_imp_subgraph)
-next
-  assume ?R
-  moreover have "arc_mono (\<lambda>H'. dVs H' = dVs H)" by (auto simp: arc_mono_def)
-  ultimately show ?L by (rule induced_subgraphI_arc_mono)
-qed
+  by (auto intro!: induced_subgraphI_arc_mono simp: arc_mono_def max_subgraph_def induced_imp_subgraph
+        dest: subgraph_induced_subgraph_neq)
 
 lemma max_subgraphI:
   assumes "P x" "subgraph x G" "\<And>y. \<lbrakk>x \<noteq> y; subgraph x y; subgraph y G\<rbrakk> \<Longrightarrow> \<not>P y"
@@ -279,14 +274,14 @@ lemma subgraphI_max_subgraph: "max_subgraph G P x \<Longrightarrow> subgraph x G
 
 subsection \<open>Connected and strongly connected components\<close>
 
-lemma in_sccs_verts_conv_reachable:
-  "S \<in> sccs_verts G \<longleftrightarrow> S \<noteq> {} \<and> (\<forall>u \<in> S. \<forall>v \<in> S. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v) \<and> (\<forall>u \<in> S. \<forall>v. v \<notin> S \<longrightarrow> \<not>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> \<not>v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u)"
-  by (simp add: sccs_verts_def)
+lemma in_sccs_dVs_conv_reachable:
+  "S \<in> sccs_dVs G \<longleftrightarrow> S \<noteq> {} \<and> (\<forall>u \<in> S. \<forall>v \<in> S. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v) \<and> (\<forall>u \<in> S. \<forall>v. v \<notin> S \<longrightarrow> \<not>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> \<not>v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u)"
+  by (simp add: sccs_dVs_def)
 
 
-lemma sccs_verts_disjoint:
-  assumes "S \<in> sccs_verts G" "T \<in> sccs_verts G" "S \<noteq> T" shows "S \<inter> T = {}"
-  using assms unfolding in_sccs_verts_conv_reachable by blast
+lemma sccs_dVs_disjoint:
+  assumes "S \<in> sccs_dVs G" "T \<in> sccs_dVs G" "S \<noteq> T" shows "S \<inter> T = {}"
+  using assms unfolding in_sccs_dVs_conv_reachable by blast
 
 lemma strongly_connected_spanning_imp_strongly_connected:
   assumes "spanning H G"
@@ -300,8 +295,8 @@ lemma strongly_connected_imp_induce_subgraph_strongly_connected:
   assumes subg: "subgraph H G"
     and sc: "strongly_connected H"
   shows "strongly_connected (G \<restriction> dVs H)"
-  by (rule strongly_connected_spanning_imp_strongly_connected[of H])
-     (auto simp add: spanning_def subg subgraph_induce_subgraphI2 sc)
+  by (auto intro: strongly_connected_spanning_imp_strongly_connected[of H "G \<restriction> dVs H"] 
+           simp: sc spanning_def subg subgraph_induce_subgraphI2)
 
 lemma strongly_connected_reachable:
   assumes "subgraph sc G"
@@ -312,16 +307,19 @@ lemma strongly_connected_reachable:
   unfolding strongly_connected_def
   by (auto dest: subgraph_reachable)
 
-lemma in_sccs_vertsI_sccs:
-  assumes "S \<in> dVs ` sccs G" shows "S \<in> sccs_verts G"
-  unfolding sccs_verts_def
+lemma sccs_dVs_restrict_eq: "S \<in> dVs ` sccs G \<Longrightarrow> dVs (G \<restriction> S) = S"
+  by (auto dest: induce_subgraph_dVsD induced_subgraphD elim!: in_sccsE)
+
+
+lemma in_sccs_dVsI_sccs:
+  assumes "S \<in> dVs ` sccs G" shows "S \<in> sccs_dVs G"
+  unfolding sccs_dVs_def
 proof (intro CollectI conjI allI ballI impI)
   show "S \<noteq> {}"
     using assms by fastforce
 
-  from assms have sc: "strongly_connected (G \<restriction> S)" "S \<subseteq> dVs G"
-     apply (auto simp: sccs_def induced_subgraph_def subgraph_induce_subgraph)
-    by (metis subgraph_dVs' subgraph_induce_subgraph)
+  from assms have sc: "strongly_connected (G \<restriction> S)"
+    by (auto simp: sccs_def induced_subgraph_def subgraph_induce_subgraph)
 
   {
     fix u v
@@ -341,15 +339,15 @@ proof (intro CollectI conjI allI ballI impI)
       then have "T \<noteq> S" using \<open>v \<notin> S\<close> by auto
 
       from p_uv p_vu have T_p_uv: "awalk (G \<restriction> T) u p_uv v" and T_p_vu: "awalk (G \<restriction> T) v p_vu u"
-        by (auto intro!: awalk_induce simp: T_def)
+        by (auto intro: awalk_induce simp: T_def)
 
       then have uv_reach: "u \<rightarrow>\<^sup>*\<^bsub>G \<restriction> T\<^esub> v" "v \<rightarrow>\<^sup>*\<^bsub>G \<restriction> T\<^esub> u"
         by (auto simp: reachable_awalk)
 
       { fix x y assume "x \<in> S" "y \<in> S"
         then have "x \<rightarrow>\<^sup>*\<^bsub>G \<restriction> S\<^esub> y" "y \<rightarrow>\<^sup>*\<^bsub>G \<restriction> S\<^esub> x"
-          using sc by (auto elim!: strongly_connectedE)
-           (metis assms imageE in_sccs_imp_induced induced_subgraphD sc(1) strongly_connected_def)+
+          using assms sc
+          by (simp_all add: sccs_dVs_restrict_eq strongly_connected_def)
         then have "x \<rightarrow>\<^sup>*\<^bsub>G \<restriction> T\<^esub> y" "y \<rightarrow>\<^sup>*\<^bsub>G \<restriction> T\<^esub> x"
           using \<open>S \<subseteq> T\<close> by (auto intro: reachable_induce_ss)
       } note A1 = this
@@ -389,14 +387,13 @@ proof (intro CollectI conjI allI ballI impI)
       }
       then have "strongly_connected (G \<restriction> T)"
         using \<open>S \<noteq> {}\<close> \<open>S \<subseteq> T\<close> T_p_uv uneq 
-        by (auto intro!: strongly_connectedI dest: induce_subgraph_vertsD)
+        by (auto intro!: strongly_connectedI dest: induce_subgraph_dVsD)
       moreover have "induced_subgraph (G \<restriction> T) G"
         by (simp add: induced_induce)
       ultimately
       have "\<exists>T. induced_subgraph (G \<restriction> T) G \<and> strongly_connected (G \<restriction> T) \<and> (G \<restriction> S) \<subset> (G \<restriction> T)"
-        using \<open>S \<subseteq> T\<close> \<open>T \<noteq> S\<close>
-        by auto
-           (metis \<open>\<And>y x. \<lbrakk>x \<in> T; y \<in> T\<rbrakk> \<Longrightarrow> x \<rightarrow>\<^sup>*\<^bsub>G \<restriction> T\<^esub> y\<close> induce_subgraph_mono induce_subgraph_vertsD psubsetI reachable_in_dVs(2) subgraph_def)
+        using \<open>S \<subseteq> T\<close> \<open>T \<noteq> S\<close> assms A
+        by (metis induce_subgraph_mono' psubsetI reachable_in_dVs(2) sccs_dVs_restrict_eq uv_reach(1))
       then have "G \<restriction> S \<notin> sccs G" unfolding sccs_def by blast
       then have "S \<notin> dVs ` sccs G"
         by (metis imageE in_sccs_imp_induced induced_subgraphD)
@@ -418,9 +415,6 @@ proof -
     assume a3: "max_subgraph G strongly_connected H"
     assume a4: "H \<subseteq> H'"
     have sg: "subgraph H G" using a3 by (auto simp: max_subgraph_def)
-    have "H \<subseteq> H'"
-      using a2 a3 a4
-      by (auto dest!: induced_subgraphD induced_subgraphI_arc_mono dominates_induce_ss)
     then have "H = H'"
       using a1 a2 a3 a4
       by (metis induced_imp_subgraph max_subgraph_def subgraphI)
@@ -437,7 +431,7 @@ proof -
         by (meson a3 induced_induce less_le_trans strongly_connected_imp_induce_subgraph_strongly_connected subg(2) subgraphD subgraph_induce_subgraphI2)
     }
     then have "max_subgraph G strongly_connected H"
-      using a1 a2 by (auto intro!: max_subgraphI dest: induced_imp_subgraph)
+      using a1 a2 by (auto intro: max_subgraphI dest: induced_imp_subgraph)
   } note Y = this
   show ?thesis unfolding sccs_def
     by (auto dest: max_subgraph_prop X intro: induced_subgraphI_arc_mono Y)
@@ -445,27 +439,27 @@ qed
 
 locale max_reachable_set =
   fixes S G 
-  assumes S_in_sv: "S \<in> sccs_verts G"
+  assumes S_in_sv: "S \<in> sccs_dVs G"
 begin
 
 lemma reach_in: "\<And>u v. \<lbrakk>u \<in> S; v \<in> S\<rbrakk> \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
   and not_reach_out: "\<And>u v. \<lbrakk>u \<in> S; v \<notin> S\<rbrakk> \<Longrightarrow> \<not>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> \<not>v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
   and not_empty: "S \<noteq> {}"
-  using S_in_sv by (auto simp: sccs_verts_def)
+  using S_in_sv by (auto simp: sccs_dVs_def)
 
 lemma awalk_induce_subgraph_scc:
   assumes conn: "u \<in> S" "v \<in> S" "awalk G u p v"
-  assumes not_singleton: "S \<noteq> {u}"
+  assumes not_singleton: "S \<noteq> {u} \<or> (u,v) \<in> G"
   shows "awalk (G \<restriction> S) u p v"
-  sorry
-(* proof -
+proof -
   let ?H = "G \<restriction> S"
   have reach:"u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v" using conn by (auto simp: reachable_awalk)
   show ?thesis
   proof (cases "set p \<subseteq> G \<restriction> S")
     case True
-    with conn reach show ?thesis
-      by (auto simp: awalk_def S_in_sv not_singleton intro: in_induce_subgraph_vertsI_reachable)
+    with conn reach not_singleton show ?thesis
+      unfolding awalk_def
+      by (auto intro: in_induce_subgraph_dVsI_reachable in_induce_subgraph_dVsI simp: S_in_sv not_singleton)
   next
     case False
     then obtain a b where "(a,b) \<in> set p" "(a,b) \<notin> (G \<restriction> S)" by auto
@@ -473,7 +467,7 @@ lemma awalk_induce_subgraph_scc:
     then have "a \<notin> S \<or> b \<notin> S" using conn by (auto simp: induce_subgraph_def)
     ultimately
     obtain w where "w \<in> set (awalk_verts u p)" "w \<notin> S" using conn
-      by (metis awalk_Nil_iff awalk_conv awalk_induce not_singleton subset_code(1))
+      by (metis (no_types, lifting) Un_iff awalkE' empty_iff empty_set fst_conv image_eqI prod.sel(2) set_awalk_verts_not_Nil_cas set_map)
     then have "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> w" "w \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v" using conn
       by (auto intro: awalk_verts_reachable_from awalk_verts_reachable_to)
     moreover
@@ -483,21 +477,22 @@ lemma awalk_induce_subgraph_scc:
 
     then show ?thesis ..
   qed
-qed *)
+qed
 
 lemma reachable_induced:
   assumes conn: "u \<in> S" "v \<in> S" "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
-  assumes not_singleton: "S \<noteq> {u}"
+  assumes not_singleton: "S \<noteq> {u} \<or> (u,v) \<in> G"
   shows "u \<rightarrow>\<^sup>*\<^bsub>G \<restriction> S\<^esub> v"
   using assms
   by (auto simp: reachable_awalk dest: awalk_induce_subgraph_scc)
 
 lemma not_singleton_scc_has_edge:
   assumes "u \<in> S"
-  assumes not_singleton: "S \<noteq> {u}"
+  assumes not_singleton: "S \<noteq> {u} \<or> (u,u) \<in> G"
   shows "\<exists>v \<in> S. (u,v) \<in> G"
-proof -
-  obtain w where "w \<in> S" "w \<noteq> u" using \<open>u \<in> S\<close> not_singleton by blast
+proof (cases "S \<noteq> {u}")
+  case True
+  then obtain w where "w \<in> S" "w \<noteq> u" using \<open>u \<in> S\<close> by blast
   then have "u \<rightarrow>\<^sup>+\<^bsub>G\<^esub> w"
     using \<open>u \<in> S\<close> reach_in by blast
   then obtain p where "awalk G u p w" "p \<noteq> []" by (auto simp: reachable1_awalk)
@@ -510,7 +505,11 @@ proof -
   then have "(u,v) \<in> G" "v \<in> dVs (G \<restriction> S)"
     using \<open>awalk G u p w\<close> \<open>awalk (G \<restriction> S) u p w\<close>
     by (auto simp: awalk_Cons_iff)
-  then show ?thesis by (auto dest: induce_subgraph_vertsD)
+  then show ?thesis by (auto dest: induce_subgraph_dVsD)
+next
+  case False
+  then show ?thesis
+    using not_singleton by blast
 qed
 
 lemma no_edge_scc_is_singleton: "G \<restriction> S = {} \<Longrightarrow> (\<exists>u. S = {u})"
@@ -519,22 +518,23 @@ lemma no_edge_scc_is_singleton: "G \<restriction> S = {} \<Longrightarrow> (\<ex
   by blast
 
 lemma strongly_connected:
-  assumes "u \<in> S" "S \<noteq> {u}"
+  assumes "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> G"
   shows "strongly_connected (G \<restriction> S)"
   using not_empty assms
-  by (intro strongly_connectedI)
-     (auto dest!: no_edge_scc_is_singleton induce_subgraph_vertsD intro: reachable_induced reach_in)
+  by (auto intro!: strongly_connectedI reach_in reachable_induced 
+      dest: no_edge_scc_is_singleton induce_subgraph_dVsD simp: induce_subgraph_not_empty)
 
 
 lemma dVs_GS_is_S:
-  assumes not_singleton: "u \<in> S" "S \<noteq> {u}"
+  assumes not_singleton: "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> G"
   shows "dVs (G \<restriction> S) = S"
-  using assms S_in_sv                                                                     
-  by (auto simp: in_sccs_verts_conv_reachable dest: induce_subgraph_vertsD)
-     (metis S_in_sv in_induce_subgraph_vertsI_reachable(2))
+  using assms S_in_sv
+  by (auto simp: in_sccs_dVs_conv_reachable 
+      dest: induce_subgraph_dVsD intro!: reachable_induced reachable_in_dVs)
+
 
 lemma induced_in_sccs: 
-  assumes "u \<in> S" "S \<noteq> {u}"
+  assumes "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> G"
   shows "G \<restriction> S \<in> sccs G"
 proof -
   let ?H = "G \<restriction> S"
@@ -567,18 +567,43 @@ proof -
 qed
 end
 
-lemma in_verts_sccsD_sccs:
-  assumes "S \<in> sccs_verts G"
-  assumes "u \<in> S" "S \<noteq> {u}"
+lemma in_sccs_dVsD_sccs:
+  assumes "S \<in> sccs_dVs G"
+  assumes "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> G"
   shows "G \<restriction> S \<in> sccs G"
 proof -
   from assms interpret max_reachable_set by unfold_locales
   show ?thesis using assms by (auto intro: induced_in_sccs)
 qed
 
-lemma "sccs_verts G - {S. S = {u}} = dVs ` sccs G"
-  oops \<comment> \<open>singleton in sccs_verts are only representable by {(u,u)}\<close>
-\<comment> \<open>maybe there is a way to formulate this as sccs_verts G = dVs ` sccs G \<Union> {...}\<close>
+text \<open>
+  This lemma (and those above used to prove it) highlights an inherent restriction of the chosen 
+  graph representation with an implicit vertex set. Obviously an SCC might consist of a single
+  vertex. When representing the SCCs as sets of vertices this does not pose a problem. On the other
+  hand, when considering SCCs as subgraphs the only way a single-vertex SCC is captured is when
+  a self-loop exists, i.e.\ as \<^term>\<open>{(u,u)}\<close>.
+\<close>
+lemma "sccs_dVs G - {{u} |u. (u,u) \<notin> G} = dVs ` sccs G" (is "?L = ?R")
+proof
+  { fix S assume "S \<in> ?L"
+    then have scc: "S \<in> sccs_dVs G" and "((\<forall>u. S \<noteq> {u}) \<or> (\<exists>u. S = {u} \<and> (u,u) \<in> G))"
+      by (auto simp: in_sccs_dVs_conv_reachable reachable_in_dVs)
+    then have not_singleton: "\<And>u. S \<noteq> {u} \<or> (u,u) \<in> G" by blast
+
+    interpret ms: max_reachable_set S using scc
+      by (rule max_reachable_set.intro)
+
+    have "S \<in> ?R" using scc not_singleton ms.not_empty
+      by (auto dest!: in_sccs_dVsD_sccs dest: ms.dVs_GS_is_S)
+  }
+  then show "?L \<subseteq> ?R" by blast
+next
+  { fix S assume "S \<in> ?R"
+    then have "S \<in> ?L"
+      by (auto simp add: in_sccs_dVsI_sccs induce_subgraph_singleton_conv dest!: sccs_dVs_restrict_eq)
+  }
+  then show "?R \<subseteq> ?L" by blast
+qed
 
 lemma induced_eq_dVs_imp_eq:
   assumes "induced_subgraph G H"
@@ -630,7 +655,7 @@ lemma scc_disj:
 proof (rule ccontr)
   assume contr: "\<not>?thesis"
 
-  let ?x = "union c d"
+  let ?x = "c \<union> d"
 
   have sc: "strongly_connected c" "strongly_connected d"
     using scc by auto
@@ -663,26 +688,26 @@ lemma in_scc_of_self: "u \<in> dVs G \<Longrightarrow> u \<in> scc_of G u"
 lemma scc_of_empty_conv: "scc_of G u = {} \<longleftrightarrow> u \<notin> dVs G"
   by (auto simp: scc_of_def reachable_in_dVs)
 
-lemma scc_of_in_sccs_verts:
-  assumes "u \<in> dVs G" shows "scc_of G u \<in> sccs_verts G"
-  using assms by (auto simp: in_sccs_verts_conv_reachable scc_of_def intro: reachable_trans)
+lemma scc_of_in_sccs_dVs:
+  assumes "u \<in> dVs G" shows "scc_of G u \<in> sccs_dVs G"
+  using assms by (auto simp: in_sccs_dVs_conv_reachable scc_of_def intro: reachable_trans)
 
-lemma sccs_verts_conv_scc_of:
-  "sccs_verts G = scc_of G ` dVs G" (is "?L = ?R")
+lemma sccs_dVs_conv_scc_of:
+  "sccs_dVs G = scc_of G ` dVs G" (is "?L = ?R")
 proof (intro set_eqI iffI)
   fix S assume "S \<in> ?R" then show "S \<in> ?L"
-    by (auto dest: scc_of_in_sccs_verts)
+    by (auto dest: scc_of_in_sccs_dVs)
 next
   fix S assume "S \<in> ?L"
   moreover
-  then obtain u where "u \<in> S" by (auto simp: in_sccs_verts_conv_reachable)
+  then obtain u where "u \<in> S" by (auto simp: in_sccs_dVs_conv_reachable)
   moreover
   then have "u \<in> dVs G" using \<open>S \<in> ?L\<close>
-    using sccs_verts_subset_dVs by blast
-  then have "scc_of G u \<in> sccs_verts G" "u \<in> scc_of G u"
-    by (auto intro: scc_of_in_sccs_verts in_scc_of_self)
+    using sccs_dVs_subset_dVs by blast
+  then have "scc_of G u \<in> sccs_dVs G" "u \<in> scc_of G u"
+    by (auto intro: scc_of_in_sccs_dVs in_scc_of_self)
   ultimately
-  have "scc_of G u = S" using sccs_verts_disjoint by blast
+  have "scc_of G u = S" using sccs_dVs_disjoint by blast
   then show "S \<in> ?R" using \<open>scc_of G u \<in> _\<close> \<open>u \<in> dVs G\<close> by auto
 qed
 
