@@ -55,6 +55,9 @@ lemma induct_pcpl_2:
 lemma dVs_empty[simp]: "dVs {} = {}"
   by (simp add: dVs_def)
 
+lemma dVs_empty_iff[simp]: "dVs E = {} \<longleftrightarrow> E = {}"
+  unfolding dVs_def by auto
+
 lemma dVsI:
   assumes "(a, v) \<in> dG" shows "a \<in> dVs dG" and "v \<in> dVs dG"
   using assms unfolding dVs_def by auto
@@ -63,6 +66,15 @@ lemma dVsI':
   assumes "e \<in> dG" shows "fst e \<in> dVs dG" and "snd e \<in> dVs dG"
   using assms
   by (auto intro: dVsI[of "fst e" "snd e"])
+
+lemma dVs_union_distr: "dVs (G \<union> H) = dVs G \<union> dVs H"
+  unfolding dVs_def by blast
+
+lemma dVs_union_big_distr: "dVs (\<Union>G) = \<Union>(dVs ` G)"
+  apply (induction G rule: infinite_finite_induct)
+    apply (auto simp: dVs_union_distr)
+   apply (smt dVs_def mem_Collect_eq mem_simps(9))
+  by (metis Sup_insert UnCI dVs_union_distr mk_disjoint_insert)
 
 lemma append_dpath_1: "dpath dG (p1 @ p2) \<Longrightarrow> dpath dG p1"
   by (induction p1) (fastforce intro: dpath.intros elim: dpath.cases simp: dVsI)+

@@ -263,15 +263,74 @@ lemma awalk_iff:
   unfolding ddfs_digraph.awalk_def awalk_def
   by (auto simp: cas_iff)
 
+lemma awalk_verts_eq:
+  "ddfs_digraph.awalk_verts u p = awalk_verts u p"
+  by (induction p arbitrary: u) auto
+
+lemma apath_iff:
+  "ddfs_digraph.apath u p v \<longleftrightarrow> apath E u p v"
+  unfolding ddfs_digraph.apath_def apath_def
+  by (auto simp: awalk_iff awalk_verts_eq)
+
 lemma vwalk_iff:
   "vwalk p digraph_of \<longleftrightarrow> p \<noteq> [] \<and> dpath E p"
   by (induction p rule: induct_list012) auto
 
+lemma symmetric_iff:
+  "symmetric digraph_of \<longleftrightarrow> sym E"
+  by (simp add: symmetric_def)
+
 end
+
 
 lemmas ddfs_library_adaptor_simps[simp] = ddfs.arc_to_ends_eq ddfs.arcs_ends_eq ddfs.dominates_iff
   ddfs.verts_eq ddfs.arcs_eq ddfs.tail_eq ddfs.head_eq ddfs.nomulti_digraph_digraph_of
   ddfs.wf_digraph_digraph_of ddfs.pair_wf_digraph_pair_digraph_of
 
+lemma digraph_of_eq_imp_eq: "ddfs.digraph_of G = ddfs.digraph_of H \<Longrightarrow> G = H"
+  by (metis ddfs.arcs_eq)
 
+lemma eq_iff_digraph_of_eq: "ddfs.digraph_of G = ddfs.digraph_of H \<longleftrightarrow> G = H"
+  using digraph_of_eq_imp_eq
+  by auto
+
+
+context pre_digraph
+begin
+
+definition add_verts :: "'a set \<Rightarrow> ('a,'b) pre_digraph" where
+  "add_verts V = \<lparr> verts = V \<union> verts G, arcs = arcs G, tail = tail G, head = head G \<rparr>"
+
+lemma
+  verts_add_verts: "verts (pre_digraph.add_verts G V) = V \<union> verts G" and
+  arcs_add_verts: "arcs (pre_digraph.add_verts G V) = arcs G" and
+  tail_add_verts: "tail (pre_digraph.add_verts G V) = tail G" and
+  head_add_verts: "head (pre_digraph.add_verts G V) = head G"
+  by (auto simp: pre_digraph.add_verts_def)
+
+lemmas add_verts_simps = verts_add_verts arcs_add_verts tail_add_verts head_add_verts
+
+definition del_verts :: "'a set \<Rightarrow> ('a,'b) pre_digraph" where
+  "del_verts V = \<lparr> verts = verts G - V, arcs = {a \<in> arcs G. tail G a \<notin> V \<and> head G a \<notin> V}, tail = tail G, head = head G \<rparr>"
+
+lemma
+  verts_del_verts: "verts (pre_digraph.del_verts G V) = verts G - V" and
+  arcs_del_verts: "arcs (pre_digraph.del_verts G V) = {a \<in> arcs G. tail G a \<notin> V \<and> head G a \<notin> V}" and
+  tail_del_verts: "tail (pre_digraph.del_verts G V) = tail G" and
+  head_del_verts: "head (pre_digraph.del_verts G V) = head G"
+  by (auto simp: pre_digraph.del_verts_def)
+
+lemmas del_verts_simps = verts_del_verts arcs_del_verts tail_del_verts head_del_verts
+end
+
+context wf_digraph
+begin
+
+lemma wf_digraph_add_verts: "wf_digraph (add_verts V)"
+  by standard (auto simp: add_verts_simps)
+
+lemma wf_digraph_del_verts: "wf_digraph (del_verts V)"
+  by standard (auto simp: del_verts_simps)
+
+end
 end
