@@ -390,6 +390,33 @@ lemma max_subgraph_imp_max_subgraph_all_verts:
   apply (auto simp add: Digraph_Component.subgraph_def compatible_def pre_digraph.add_verts_simps subgraph_iff wf_digraph.wf_digraph_add_verts)
   by (smt Digraph_Component.subgraphE Digraph_Component.subgraphI compatible_def dVs_subset ddfs.arcs_eq ddfs.head_eq ddfs.tail_eq ddfs.verts_eq ddfs.wf_digraph_digraph_of le_sup_iff pre_digraph.arcs_add_verts pre_digraph.head_add_verts pre_digraph.induced_subgraph_altdef pre_digraph.tail_add_verts pre_digraph.verts_add_verts subset_antisym wf_digraph.induce_eq_iff_induced wf_digraph.induced_subgraph_refl wf_digraph.wf_digraph_add_verts)
 
+lemma max_subgraph_arcs_eq:
+  assumes "max_subgraph G P H"
+  assumes "H \<subseteq> arcs H'"
+  assumes max_digraph_of: "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) H'"
+  shows "arcs H' = H"
+  using assms pre_digraph.subgraphI_max_subgraph[OF max_digraph_of] pre_digraph.max_subgraph_prop[OF max_digraph_of]
+  by (auto dest: max_subgraphD)
+
+lemma max_subgraph_arcs_eq':
+  assumes "max_subgraph G P H"
+  assumes "arcs H' \<subseteq> H"
+  assumes "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) H'"
+  shows "arcs H' = H"
+  using assms pre_digraph.subgraphI_max_subgraph[OF assms(3)] pre_digraph.max_subgraph_prop[OF assms(3)]
+  by (metis (no_types, lifting) Digraph_Component.subgraphE Digraph_Component.subgraphI compatible_def ddfs.arcs_eq digraph_of_all_verts_def max_subgraph_P_arcs_verts max_subgraph_imp_max_subgraph_all_verts pre_digraph.arcs_add_verts pre_digraph.max_subgraph_subg_eq pre_digraph.subgraphI_max_subgraph)
+
+lemma max_subgraph_digraph_of_additional_verts_disconnected:
+  assumes "max_subgraph G P H"
+  assumes "pre_digraph.max_subgraph (ddfs.digraph_of G) (P \<circ> arcs) H'"
+  assumes "u \<in> verts H'" "u \<notin> dVs H"
+  assumes "H \<subseteq> arcs H'" \<comment> \<open>a max subgraph is not unique, therefore we have to enforce that we are talking about the "same" max subgraph in both worlds\<close>
+  shows "\<nexists>v. (Digraph.dominates H' u v \<or> Digraph.dominates H' v u)"
+  using assms
+  by (auto dest!: max_subgraph_arcs_eq)
+     (metis Digraph_Component.subgraphE compatible_digraph_of_arcs_ends dVsI pre_digraph.subgraphI_max_subgraph subgraph_digraph_of_arcs)+
+
+
 text \<open>
   The assumption in this lemma is pretty strong, however, it is necessary due to 
   @{thm max_subgraph_P_arcs_verts}.\<close>
@@ -734,7 +761,7 @@ lemma union_sccs_dVs_subset: "dVs (\<Union>(sccs G)) \<subseteq> dVs G"
   by (simp add: dVs_subset union_sccs_subset)
 
 
-lemma
+lemma not_in_dVs_sccs_not_reachable_and_reach:
   fixes G :: "'a dgraph"
   assumes "u \<notin> dVs (\<Union>(sccs G))"
   shows "\<nexists>v. u \<noteq> v \<and> (v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u) \<and> (u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v)"
@@ -769,14 +796,20 @@ lemma
   assumes "u \<in> dVs G"
   assumes "u \<notin> dVs (\<Union>(sccs G))"
   assumes "connected G" "sccs G \<noteq> {}"
-  shows "\<exists>C \<in> sccs G. \<exists>v \<in> dVs C. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
-  oops
-  text \<open>
-    - sccs G = {}?
-    - sccs G ~= {}, disconnected part with only singleton sccs?
-    - connected G /\ sccs G ~= {}
-  \<close>
+  obtains v C c where 
+    "C \<in> sccs G"
+    "c \<in> dVs C"
+    "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
+    "v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> c \<or> c \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
+  oops \<comment> \<open>u --> v <-- w --> C\<close>
 
+lemma not_in_dVs_sccs_singleton_scc:
+  fixes G :: "'a dgraph"
+  assumes "u \<in> dVs G"
+  assumes "u \<notin> dVs (\<Union>(sccs G))"
+  shows "scc_of G u = {u}"
+  using assms in_scc_ofD not_in_dVs_sccs_not_reachable_and_reach
+  by fastforce
 
 section\<open>SCC graph and DAGs\<close>
 definition scc_graph :: "'a dgraph \<Rightarrow> ('a set) dgraph" where
