@@ -306,9 +306,9 @@ thm edges_are_walks
 lemma edges_are_dpath_bet:
   assumes "(v, w) \<in> E"
   shows "dpath_bet E [v, w] v w"
-  using assms dVsI
   unfolding dpath_bet_def
-  by fastforce
+  using assms
+  by (simp add: dVsI)
 
 thm walk_subset
 lemma dpath_bet_subset:

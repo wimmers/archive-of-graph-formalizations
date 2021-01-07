@@ -1,7 +1,6 @@
 theory DDFS_Library_Adaptor
   imports
     AGF.DDFS
-    Ports.Noschinski_to_DDFS
     Graph_Theory.Graph_Theory
 begin
 
@@ -56,19 +55,23 @@ text \<open>
 \<close>
 lemma reachable_imp:
   "u \<rightarrow>\<^sup>*\<^bsub>D\<^esub> v \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
-  unfolding reachable_def Noschinski_to_DDFS.reachable_def
+  unfolding reachable_def DDFS.reachable_def
   by (rule rtrancl_on_mono[of D])
      (auto simp add: dVs_subset_verts dominates_iff)
 
 lemma reachable_imp':
   "u \<in> dVs D \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>D\<^esub> v"
-  by (cases "u = v"; auto)
+  unfolding reachable_def DDFS.reachable_def
+  by (auto dest!: rtrancl_on_rtranclI 
+           elim: rtrancl.cases 
+           intro!: rtrancl_consistent_rtrancl_on 
+           simp: dVsI)
 
 lemma reachable_iff:
   "u \<in> dVs D \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>D\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
   using reachable_imp reachable_imp' by blast
 
-lemma cas_imp_map_arc_to_ends_cas: 
+(* lemma cas_imp_map_arc_to_ends_cas: 
   "cas u p v \<Longrightarrow> Noschinski_to_DDFS.cas u (map (arc_to_ends G) p) v"
   by (induction p arbitrary: u)
      (auto simp: arc_to_ends_def)
@@ -142,7 +145,7 @@ lemma awalk_iff_awalk':
   assumes "set p \<subseteq> D"
   shows "awalk u (map arc_from_ends p) v \<longleftrightarrow> Noschinski_to_DDFS.awalk D u p v"
   using assms awalk_imp_awalk_map_arc_from_ends awalk_map_arc_from_ends_imp_awalk by blast
-
+ *)
 
 text \<open>
   \<^term>\<open>vwalk\<close> requires non-emptiness.
@@ -189,6 +192,7 @@ end
 
 
 subsection \<open>From DDFS to Digraph\<close>
+text \<open>Allows moving lemmas from Digraph to DDFS.\<close>
 locale ddfs =
   fixes E :: "'a dgraph"
 begin
@@ -200,7 +204,7 @@ lemma digraph_of_pair_conv:
   "with_proj pair_digraph_of = digraph_of"
   unfolding pair_digraph_of_def digraph_of_def with_proj_def by simp
 
-interpretation ddfs_digraph: nomulti_digraph digraph_of
+sublocale ddfs_digraph: nomulti_digraph digraph_of
   by standard (auto simp: digraph_of_def arc_to_ends_def dVsI)
 
 lemma nomulti_digraph_digraph_of: "nomulti_digraph digraph_of" ..
@@ -241,36 +245,12 @@ lemma head_eq[simp]:
 
 lemma reachable_iff:
   "u \<rightarrow>\<^sup>*\<^bsub>digraph_of\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
-  unfolding reachable_def Noschinski_to_DDFS.reachable_def
+  unfolding reachable_def DDFS.reachable_def
   by simp
 
 lemma reachable1_iff:
   "u \<rightarrow>\<^sup>+\<^bsub>digraph_of\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
   by simp
-
-lemma cas_conv:
-  "cas u (e # es) v = (fst e = u \<and> cas (snd e) es v)"
-  by (simp add: cas_simp)
-
-lemma cas_iff:
-  "ddfs_digraph.cas u p v \<longleftrightarrow> cas u p v"
-  by (induction p arbitrary: u)
-     (auto simp add: cas_conv)
-
-
-lemma awalk_iff:
-  "ddfs_digraph.awalk u p v \<longleftrightarrow> awalk E u p v"
-  unfolding ddfs_digraph.awalk_def awalk_def
-  by (auto simp: cas_iff)
-
-lemma awalk_verts_eq:
-  "ddfs_digraph.awalk_verts u p = awalk_verts u p"
-  by (induction p arbitrary: u) auto
-
-lemma apath_iff:
-  "ddfs_digraph.apath u p v \<longleftrightarrow> apath E u p v"
-  unfolding ddfs_digraph.apath_def apath_def
-  by (auto simp: awalk_iff awalk_verts_eq)
 
 lemma vwalk_iff:
   "vwalk p digraph_of \<longleftrightarrow> p \<noteq> [] \<and> dpath E p"

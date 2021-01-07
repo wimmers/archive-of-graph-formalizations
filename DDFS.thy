@@ -1,5 +1,7 @@
 theory DDFS
-  imports Main
+  imports 
+    Main
+    Graph_Theory.Rtrancl_On
 begin
 
 text \<open>Theory about digraphs\<close>
@@ -165,5 +167,70 @@ proof(induction vs arbitrary: v v' rule: rev_induct)
       by auto
   qed
 qed auto
+
+abbreviation dominates :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<index>_" [100,100] 40) where
+  "dominates E u v \<equiv> (u,v) \<in> E"
+
+abbreviation reachable1 :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<^sup>+\<index> _" [100,100] 40) where
+  "reachable1 E u v \<equiv> (u,v) \<in> E\<^sup>+"
+
+definition reachable :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<^sup>*\<index> _" [100,100] 40) where
+  "reachable E u v \<equiv> (u,v) \<in> rtrancl_on (dVs E) E"
+
+lemma reachableE[elim]:
+  assumes "u \<rightarrow>\<^bsub>E\<^esub> v"
+  obtains e where "e \<in> E" "e = (u, v)"
+  using assms by auto
+
+lemma reachable_refl[intro!, Pure.intro!, simp]: "v \<in> dVs E \<Longrightarrow> v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+  unfolding reachable_def by auto
+
+lemma reachable_trans[trans]:
+  assumes "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v" "v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w" shows "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
+  using assms unfolding reachable_def by (rule rtrancl_on_trans)
+
+lemma reachable_induct[consumes 1, case_names base step]:
+  assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+    and cases: "u \<in> dVs E \<Longrightarrow> P u"
+      "\<And>x y. \<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> x; x \<rightarrow>\<^bsub>E\<^esub> y; P x\<rbrakk> \<Longrightarrow> P y"
+  shows "P v"
+  using assms unfolding reachable_def by (rule rtrancl_on_induct)
+
+lemma converse_reachable_induct[consumes 1, case_names base step, induct pred: reachable]:
+  assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+    and cases: "v \<in> dVs E \<Longrightarrow> P v"
+      "\<And>x y. \<lbrakk>x \<rightarrow>\<^bsub>E\<^esub> y; y \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v; P y\<rbrakk> \<Longrightarrow> P x"
+    shows "P u"
+  using assms unfolding reachable_def by (rule converse_rtrancl_on_induct)
+
+lemma reachable_in_dVs:
+  assumes "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+  shows "u \<in> dVs E" "v \<in> dVs E"
+  using assms by (induct) (simp_all add: dVsI)
+
+lemma reachable1_in_dVs:
+  assumes "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
+  shows "u \<in> dVs E" "v \<in> dVs E"
+  using assms by (induct) (simp_all add: dVsI)
+
+
+lemma reachable1_reachable[intro]:
+  "v \<rightarrow>\<^sup>+\<^bsub>E\<^esub> w \<Longrightarrow> v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
+  unfolding reachable_def
+  by (auto intro: rtrancl_consistent_rtrancl_on simp: dVsI reachable1_in_dVs)
+
+lemmas reachable1_reachableE[elim] = reachable1_reachable[elim_format]
+
+lemma reachable_neq_reachable1[intro]:
+  assumes reach: "v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
+    and neq: "v \<noteq> w"
+  shows "v \<rightarrow>\<^sup>+\<^bsub>E\<^esub> w" 
+  using assms
+  unfolding reachable_def
+  by (auto dest: rtrancl_on_rtranclI rtranclD)
+
+lemmas reachable_neq_reachable1E[elim] = reachable_neq_reachable1[elim_format]
+
+lemma arc_implies_dominates: "e \<in> E \<Longrightarrow> fst e \<rightarrow>\<^bsub>E\<^esub> snd e" by auto
 
 end
