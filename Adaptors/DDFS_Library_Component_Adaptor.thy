@@ -193,18 +193,18 @@ lemma in_digraph_of_sccs_imp_in_sccs_image:
   assumes "u \<in> verts c" "verts c \<noteq> {u}"
   shows "c \<in> ddfs.digraph_of ` sccs G"
   using assms
-  apply (auto elim!: pre_digraph.in_sccsE)
-  by (smt assms(3) ddfs.verts_eq image_iff in_sccsI induced_imp_induced induced_subgraph_digraph_of_arcs strongly_connected_iff strongly_connected_induced_is_digraph_of)
+  by (auto elim!: pre_digraph.in_sccsE)
+     (smt assms(3) ddfs.verts_eq image_iff in_sccsI induced_imp_induced induced_subgraph_dVs_subset_iff induced_subgraph_digraph_of_arcs strongly_connected_iff strongly_connected_induced_is_digraph_of)
 
 lemma in_sccs_imp_in_sccs_digraph_of: 
   "c \<in> sccs G \<Longrightarrow> ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
-  by (smt Digraph_Component.strongly_connected_def ddfs.verts_eq in_sccsD induced_imp_induced induced_subgraph_digraph_of_arcs pre_digraph.in_sccsI psubsetE strongly_connected_iff strongly_connected_induced_is_digraph_of subsetI subset_empty subset_insert)
+  by (smt Digraph_Component.strongly_connected_def ddfs.verts_eq in_sccsD induced_subgraph_dVs_subset_iff induced_imp_induced induced_subgraph_digraph_of_arcs pre_digraph.in_sccsI psubsetE strongly_connected_iff strongly_connected_induced_is_digraph_of subsetI subset_empty subset_insert)
 
 lemma in_sccs_digraph_of_imp_in_sccs:
   "(ddfs.digraph_of c) \<in> pre_digraph.sccs (ddfs.digraph_of G) \<Longrightarrow> c \<in> sccs G"
   unfolding sccs_def pre_digraph.sccs_def
-  apply (simp add: induced_subgraph_iff strongly_connected_iff)
-  by (metis ddfs.verts_eq)
+  by (simp add: induced_subgraph_iff strongly_connected_iff)
+     (metis ddfs.verts_eq induced_imp_induced' induced_subgraph_dVs_subset_iff)
 
 lemma in_sccs_iff:
   shows "c \<in> sccs G \<longleftrightarrow> ddfs.digraph_of c \<in> pre_digraph.sccs (ddfs.digraph_of G)"
@@ -216,5 +216,9 @@ lemma sccs_dVs_eq: "sccs_dVs G = pre_digraph.sccs_verts (ddfs.digraph_of G)"
 
 lemma scc_of_eq: "scc_of G u = pre_digraph.scc_of (ddfs.digraph_of G) u"
   by (auto simp: scc_of_def pre_digraph.scc_of_def ddfs.reachable_iff)
+
+lemma union_eq: "ddfs.digraph_of (G \<union> H) = union (ddfs.digraph_of G) (ddfs.digraph_of H)"
+  unfolding ddfs.digraph_of_def
+  by (auto simp: dVs_union_distr)
 
 end

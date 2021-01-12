@@ -30,7 +30,7 @@ definition max_subgraph :: "'a dgraph \<Rightarrow> ('a dgraph \<Rightarrow> boo
 
 definition sccs :: "'a dgraph \<Rightarrow> 'a dgraph set" where
   "sccs G \<equiv> {H. induced_subgraph H G \<and> strongly_connected H \<and> \<not>(\<exists>H'. induced_subgraph H' G
-      \<and> strongly_connected H' \<and> dVs H \<subset> dVs H')}"
+      \<and> strongly_connected H' \<and>  H \<subset> H')}"
 
 definition sccs_dVs :: "'a dgraph \<Rightarrow> 'a set set" where
   "sccs_dVs G \<equiv> {S. S \<noteq> {} \<and> (\<forall>u \<in> S. \<forall>v \<in> S. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v) \<and> (\<forall>u \<in> S. \<forall>v. v \<notin> S \<longrightarrow> \<not>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> \<not>v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u)}"
@@ -91,11 +91,6 @@ lemma subgraph_induce_subgraph:
 lemma subgraph_induce_subgraph':
   "H = (G \<restriction> vs) \<Longrightarrow> subgraph H G"
   by (simp add: subgraph_induce_subgraph)
-
-lemma subgraph_induced_subgraph:
-  "induced_subgraph H G \<Longrightarrow> subgraph H G"
-  unfolding induced_subgraph_def
-  by (auto simp: subgraph_induce_subgraph')
 
 lemma induced_subgraphI[intro]:
   assumes "subgraph H G"
@@ -230,7 +225,7 @@ lemma max_subgraphE[elim?]:
 lemma in_sccsI[intro]:
   assumes "induced_subgraph H G"
   assumes "strongly_connected H"
-  assumes "\<And>H'. \<lbrakk>induced_subgraph H' G; strongly_connected H'; dVs H \<subset> dVs H'\<rbrakk> \<Longrightarrow> False"
+  assumes "\<And>H'. \<lbrakk>induced_subgraph H' G; strongly_connected H'; H \<subset> H'\<rbrakk> \<Longrightarrow> False"
   shows "H \<in> sccs G"
   using assms unfolding sccs_def
   by auto
@@ -238,16 +233,25 @@ lemma in_sccsI[intro]:
 lemma in_sccsD:
   assumes "H \<in> sccs G"
   shows "induced_subgraph H G" "strongly_connected H"
-  and "\<And>H'. \<lbrakk>induced_subgraph H' G; strongly_connected H'; dVs H \<subset> dVs H'\<rbrakk> \<Longrightarrow> False"
+  and "\<And>H'. \<lbrakk>induced_subgraph H' G; strongly_connected H'; H \<subset> H'\<rbrakk> \<Longrightarrow> False"
   using assms unfolding sccs_def
   by auto
 
 lemma in_sccsE[elim?]:
   assumes "H \<in> sccs G"
   obtains "induced_subgraph H G" "strongly_connected H"
-  and "\<And>H'. \<lbrakk>induced_subgraph H' G; strongly_connected H'; dVs H \<subset> dVs H'\<rbrakk> \<Longrightarrow> False"
+  and "\<And>H'. \<lbrakk>induced_subgraph H' G; strongly_connected H'; H \<subset> H'\<rbrakk> \<Longrightarrow> False"
   using assms
   by (auto dest: in_sccsD)
+
+text \<open>
+  This lemma is merely here to prove that we can replace \<^term>\<open>dVs H \<subset> dVs H'\<close> by \<^term>\<open>H \<subset> H'\<close>
+  in the definition \<^term>\<open>sccs\<close>.
+\<close>
+lemma induced_subgraph_dVs_subset_iff:
+  "induced_subgraph H G \<Longrightarrow> induced_subgraph H' G \<Longrightarrow> dVs H \<subset> dVs H' \<longleftrightarrow> H \<subset> H'"
+  unfolding induced_subgraph_def induce_subgraph_def subset_eq
+  by (auto dest: dVs_subset) blast
 
 lemma in_sccs_dVsI[intro]:
   fixes G :: "'a dgraph"

@@ -80,7 +80,7 @@ proof (relation "measure (length \<circ> snd)")
     unfolding d.is_awalk_cyc_decomp_iff d.awalk_cyc_decomp_eq d.awalk_iff_awalk d.awalk_verts_eq
     by (auto intro: d.ddfs_digraph.awalk_cyc_decomp_has_prop elim!: d.ddfs_digraph.awalk_cyc_decompE simp: d.ddfs_digraph.closed_w_def)
   then show "((E, q @ s), E, p) \<in> measure (length \<circ> snd)"
-    by (auto simp: closed_w_def)
+    by (auto simp flip: ddfs.dominates_iff)
 qed simp
 declare awalk_to_apath.simps[simp del]
 

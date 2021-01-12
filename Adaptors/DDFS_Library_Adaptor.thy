@@ -223,8 +223,8 @@ lemma arcs_ends_eq[simp]:
   "arcs_ends digraph_of = E"
   unfolding arcs_ends_def arc_to_ends_eq by (simp add: digraph_of_def)
 
-lemma dominates_iff[simp]:
-  "u \<rightarrow>\<^bsub>digraph_of\<^esub> v \<longleftrightarrow> (u, v) \<in> E"
+lemma dominates_iff:
+  "(u,v) \<in> E \<longleftrightarrow> u \<rightarrow>\<^bsub>digraph_of\<^esub> v"
   by simp
 
 lemma verts_eq[simp]:
@@ -244,26 +244,27 @@ lemma head_eq[simp]:
   unfolding digraph_of_def by simp
 
 lemma reachable_iff:
-  "u \<rightarrow>\<^sup>*\<^bsub>digraph_of\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+  "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>*\<^bsub>digraph_of\<^esub> v"
   unfolding reachable_def DDFS.reachable_def
   by simp
 
 lemma reachable1_iff:
-  "u \<rightarrow>\<^sup>+\<^bsub>digraph_of\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
+  "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>+\<^bsub>digraph_of\<^esub> v"
   by simp
 
 lemma vwalk_iff:
-  "vwalk p digraph_of \<longleftrightarrow> p \<noteq> [] \<and> dpath E p"
-  by (induction p rule: induct_list012) auto
+  "p \<noteq> [] \<and> dpath E p \<longleftrightarrow> vwalk p digraph_of"
+  by (induction p rule: induct_list012)
+     (auto)
 
 lemma symmetric_iff:
-  "symmetric digraph_of \<longleftrightarrow> sym E"
+  "sym E \<longleftrightarrow> symmetric digraph_of"
   by (simp add: symmetric_def)
 
 end
 
 
-lemmas ddfs_library_adaptor_simps[simp] = ddfs.arc_to_ends_eq ddfs.arcs_ends_eq ddfs.dominates_iff
+lemmas ddfs_library_adaptor_simps[simp] = ddfs.arc_to_ends_eq ddfs.arcs_ends_eq ddfs.dominates_iff[symmetric]
   ddfs.verts_eq ddfs.arcs_eq ddfs.tail_eq ddfs.head_eq ddfs.nomulti_digraph_digraph_of
   ddfs.wf_digraph_digraph_of ddfs.pair_wf_digraph_pair_digraph_of
 
