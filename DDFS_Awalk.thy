@@ -1,5 +1,7 @@
 theory DDFS_Awalk
-  imports Adaptors.DDFS_Library_Awalk_Adaptor
+  imports 
+    Adaptors.DDFS_Library_Awalk_Adaptor
+    DDFS_Vwalk
 begin
 
 no_notation Digraph.dominates ("_ \<rightarrow>\<index> _")
@@ -370,6 +372,29 @@ proof -
   then show ?thesis by (auto simp: reachable_awalk)
 qed
 
+subsection \<open>Vertex walks\<close>
+lemma awalk_imp_vwalk:
+  assumes "awalk E u p v" shows "vwalk_bet E u (awalk_verts u p) v"
+  using assms
+  by (induction p arbitrary: u rule: edges_of_vwalk.induct)
+     (auto simp: awalk_simps vwalk_bet_reflexive edges_are_vwalk_bet, simp add: vwalk_bet_def)
 
+lemma awalkE_vwalk:
+  assumes "awalk E u p v"
+  obtains p' where "p' = awalk_verts u p" "vwalk_bet E u p' v"
+  using assms
+  by (auto dest: awalk_imp_vwalk)
+
+lemma vwalk_imp_awalk:
+  "vwalk_bet E u p v \<Longrightarrow> awalk E u (edges_of_vwalk p) v"
+  unfolding vwalk_bet_def
+  by (induction p arbitrary: u rule: edges_of_vwalk.induct)
+     (auto simp: awalk_Nil_iff arc_implies_awalk awalk_Cons_iff)
+
+lemma vwalkE_awalk:
+  assumes "vwalk_bet E u p v"
+  obtains p' where "p' = edges_of_vwalk p" "awalk E u p' v"
+  using assms
+  by (auto dest: vwalk_imp_awalk)
 
 end

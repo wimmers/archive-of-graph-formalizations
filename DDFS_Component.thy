@@ -3,6 +3,7 @@ theory DDFS_Component
     DDFS_Component_Defs
     Adaptors.DDFS_Library_Component_Adaptor
     DDFS_Awalk
+    DDFS_Vwalk
 begin
 
 subsection \<open>Basic lemmas\<close>
@@ -53,8 +54,16 @@ lemma reachable_mono:
   fixes H G :: "'a dgraph"
   assumes "u \<rightarrow>\<^sup>*\<^bsub>H\<^esub> v" "subgraph H G"
   shows "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
-  using assms
+  using assms                                                           
   by (auto simp: ddfs.reachable_iff subgraph_iff intro: pre_digraph.reachable_mono)
+
+lemma reachable1_mono:
+  fixes H G :: "'a dgraph"
+  assumes "u \<rightarrow>\<^sup>+\<^bsub>H\<^esub> v" "subgraph H G"
+  shows "u \<rightarrow>\<^sup>+\<^bsub>G\<^esub> v"
+  using assms
+  by (auto intro: trancl_mono)
+
 
 lemma subgraph_awalk_imp_awalk:
   assumes "awalk H u p v"
@@ -562,7 +571,6 @@ lemma union_sccs_subset: "\<Union>(sccs G) \<subseteq> G"
 lemma union_sccs_dVs_subset: "dVs (\<Union>(sccs G)) \<subseteq> dVs G"
   by (simp add: dVs_subset union_sccs_subset)
 
-
 lemma not_in_dVs_sccs_not_reachable_and_reach:
   fixes G :: "'a dgraph"
   assumes "u \<notin> dVs (\<Union>(sccs G))"
@@ -614,5 +622,75 @@ lemma not_in_dVs_sccs_singleton_scc:
   by fastforce
 
 declare ddfs_library_adaptor_simps[simp del]
+
+subsection \<open>Vertex walks\<close>
+lemma vwalk_subgraph:
+  assumes "vwalk E p" "subgraph E E'"
+  shows "vwalk E' p"
+  using assms dVs_subset
+  by (induction, auto)
+
+lemma vwalk_edges_of_vwalk_refl: "length p \<ge> 2 \<Longrightarrow> vwalk (set (edges_of_vwalk p)) p"
+proof (induction p rule: edges_of_vwalk.induct)
+  case (3 v v' l)
+  thus ?case
+    by (cases l) (auto intro: vwalk_subgraph simp add: vwalk2 dVs_def)
+qed simp_all
+
+lemma vwalk_edges_subset:
+  assumes "vwalk E p"
+  shows "subgraph (set (edges_of_vwalk p)) E"
+  using assms
+  by (induction, auto)
+
+lemma vwalk_bet_subgraph:
+  assumes "subgraph E E'"
+  assumes "vwalk_bet E p u v"
+  shows "vwalk_bet E' p u v"
+  using assms vwalk_subgraph
+  unfolding vwalk_bet_def by blast
+
+subsection \<open>Vertex induced subgraphs\<close>
+definition vertex_induced_subgraph :: "('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> bool" where
+  "vertex_induced_subgraph H V G \<equiv> H = {(u, v) \<in> G. {u, v} \<subseteq> V}"
+
+lemma vertex_induced_subgraphI[intro]:
+  "H = {(u, v) \<in> G. {u, v} \<subseteq> V} \<Longrightarrow> vertex_induced_subgraph H V G" by (simp add: vertex_induced_subgraph_def)
+
+lemma vertex_induced_subgraphE[elim]:
+  assumes "vertex_induced_subgraph H V G"
+  obtains "H = {(u, v) \<in> G. {u, v} \<subseteq> V}"
+  using assms by (simp add: vertex_induced_subgraph_def)
+
+lemma vertex_induced_subgraph_subgraph:
+  "vertex_induced_subgraph H V G \<Longrightarrow> subgraph H G"
+  by auto
+
+lemma vertex_induced_subgraph_dVs_subset_V:
+  "vertex_induced_subgraph H V G \<Longrightarrow> dVs H \<subseteq> V"
+  unfolding vertex_induced_subgraph_def dVs_def
+  by auto
+
+lemma vertex_induced_subgraph_dVs_subset_Int:
+  "vertex_induced_subgraph H V G \<Longrightarrow> dVs H \<subseteq> dVs G \<inter> V" \<comment> \<open>vertices might become disconnected\<close>
+  by (simp add: vertex_induced_subgraph_dVs_subset_V vertex_induced_subgraph_subgraph subgraph_dVs)
+
+lemma vwalk_vertex_induced_subgraph_vwalk:
+  assumes "vwalk G (u # p @ [v])" \<comment> \<open>vertices are only in the induced subgraph when they don't get disconnected\<close>
+  assumes "vertex_induced_subgraph H V G"
+  assumes "set (u # p @ [v]) \<subseteq> V"
+  shows "vwalk H (u # p @ [v])"
+  using assms
+  by (induction p arbitrary: u)
+     (auto simp: dVsI)
+
+lemma vwalk_bet_vertex_induced_subgraph:
+  assumes "vwalk_bet G (u # p @ [v]) u v"
+  assumes "vertex_induced_subgraph H V G"
+  assumes "set (u # p @ [v]) \<subseteq> V"
+  shows "vwalk_bet H (u # p @ [v]) u v"
+  using assms
+  by (auto intro!: nonempty_vwalk_vwalk_bet simp: vwalk_bet_def vwalk_vertex_induced_subgraph_vwalk)
+
 
 end
