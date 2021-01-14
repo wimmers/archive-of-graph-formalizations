@@ -1,8 +1,0 @@
-session Ports = "AGF" +
-  options [document = pdf, document_output = "output"]
-  theories
-    Findings_Walks
-  theories [document = false]
-    Ports_Overview
-  document_files
-    "root.tex"
