@@ -1,6 +1,7 @@
 theory DDFS_Library_Adaptor
   imports
     AGF.DDFS
+    AGF.DDFS_Vwalk
     Graph_Theory.Graph_Theory
 begin
 
@@ -151,7 +152,7 @@ text \<open>
   \<^term>\<open>vwalk\<close> requires non-emptiness.
 \<close>
 lemma dpath_imp_vwalk:
-  "dpath D (u # xs) \<Longrightarrow> vwalk (u # xs) G"
+  "DDFS_Vwalk.vwalk D (u # xs) \<Longrightarrow> vwalk (u # xs) G"
   by (induction xs arbitrary: u)
      (auto simp: dVs_subset_verts)
 
@@ -160,14 +161,14 @@ text \<open>
 \<close>
 lemma vwalk_imp_dpath:
   assumes "u \<in> dVs D"
-  shows "vwalk (u # xs) G \<Longrightarrow> dpath D (u # xs)"
+  shows "vwalk (u # xs) G \<Longrightarrow> DDFS_Vwalk.vwalk D (u # xs)"
   using assms
   by (induction xs arbitrary: u)
      (auto simp: dVsI)
 
 lemma vwalk_iff:
   assumes "u \<in> dVs D"
-  shows "vwalk (u # xs) G \<longleftrightarrow> dpath D (u # xs)"
+  shows "vwalk (u # xs) G \<longleftrightarrow> DDFS_Vwalk.vwalk D (u # xs)"
   using assms vwalk_imp_dpath dpath_imp_vwalk by blast
 
 end
@@ -253,7 +254,7 @@ lemma reachable1_iff:
   by simp
 
 lemma vwalk_iff:
-  "p \<noteq> [] \<and> dpath E p \<longleftrightarrow> vwalk p digraph_of"
+  "p \<noteq> [] \<and> DDFS_Vwalk.vwalk E p \<longleftrightarrow> vwalk p digraph_of"
   by (induction p rule: induct_list012)
      (auto)
 

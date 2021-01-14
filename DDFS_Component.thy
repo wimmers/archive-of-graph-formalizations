@@ -1,9 +1,9 @@
 theory DDFS_Component
   imports
     DDFS_Component_Defs
-    Adaptors.DDFS_Library_Component_Adaptor
     DDFS_Awalk
     DDFS_Vwalk
+    Adaptors.DDFS_Library_Component_Adaptor
 begin
 
 subsection \<open>Basic lemmas\<close>
@@ -612,6 +612,7 @@ lemma
     "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
     "v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> c \<or> c \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
   oops \<comment> \<open>u --> v <-- w --> C\<close>
+  text\<open>or v is also singleton scc\<close>
 
 lemma not_in_dVs_sccs_singleton_scc:
   fixes G :: "'a dgraph"
@@ -625,12 +626,12 @@ declare ddfs_library_adaptor_simps[simp del]
 
 subsection \<open>Vertex walks\<close>
 lemma vwalk_subgraph:
-  assumes "vwalk E p" "subgraph E E'"
-  shows "vwalk E' p"
+  assumes "DDFS_Vwalk.vwalk E p" "subgraph E E'"
+  shows "DDFS_Vwalk.vwalk E' p"
   using assms dVs_subset
   by (induction, auto)
 
-lemma vwalk_edges_of_vwalk_refl: "length p \<ge> 2 \<Longrightarrow> vwalk (set (edges_of_vwalk p)) p"
+lemma vwalk_edges_of_vwalk_refl: "length p \<ge> 2 \<Longrightarrow> DDFS_Vwalk.vwalk (set (edges_of_vwalk p)) p"
 proof (induction p rule: edges_of_vwalk.induct)
   case (3 v v' l)
   thus ?case
@@ -638,7 +639,7 @@ proof (induction p rule: edges_of_vwalk.induct)
 qed simp_all
 
 lemma vwalk_edges_subset:
-  assumes "vwalk E p"
+  assumes "DDFS_Vwalk.vwalk E p"
   shows "subgraph (set (edges_of_vwalk p)) E"
   using assms
   by (induction, auto)
@@ -676,19 +677,19 @@ lemma vertex_induced_subgraph_dVs_subset_Int:
   by (simp add: vertex_induced_subgraph_dVs_subset_V vertex_induced_subgraph_subgraph subgraph_dVs)
 
 lemma vwalk_vertex_induced_subgraph_vwalk:
-  assumes "vwalk G (u # p @ [v])" \<comment> \<open>vertices are only in the induced subgraph when they don't get disconnected\<close>
+  assumes "DDFS_Vwalk.vwalk G (u # p @ [v])" \<comment> \<open>vertices are only in the induced subgraph when they don't get disconnected\<close>
   assumes "vertex_induced_subgraph H V G"
   assumes "set (u # p @ [v]) \<subseteq> V"
-  shows "vwalk H (u # p @ [v])"
+  shows "DDFS_Vwalk.vwalk H (u # p @ [v])"
   using assms
   by (induction p arbitrary: u)
      (auto simp: dVsI)
 
 lemma vwalk_bet_vertex_induced_subgraph:
-  assumes "vwalk_bet G (u # p @ [v]) u v"
+  assumes "vwalk_bet G u (u # p @ [v]) v"
   assumes "vertex_induced_subgraph H V G"
   assumes "set (u # p @ [v]) \<subseteq> V"
-  shows "vwalk_bet H (u # p @ [v]) u v"
+  shows "vwalk_bet H u (u # p @ [v]) v"
   using assms
   by (auto intro!: nonempty_vwalk_vwalk_bet simp: vwalk_bet_def vwalk_vertex_induced_subgraph_vwalk)
 
