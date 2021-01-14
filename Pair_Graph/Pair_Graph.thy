@@ -1,10 +1,10 @@
-theory DDFS
+theory Pair_Graph
   imports 
     Main
     Graph_Theory.Rtrancl_On
 begin
 
-text \<open>Theory about digraphs\<close>
+text \<open>Theory about digraphs represented as a set of pairs (and an implicit vertex set)\<close>
 
 type_synonym 'a dgraph = "('a \<times> 'a) set"
 

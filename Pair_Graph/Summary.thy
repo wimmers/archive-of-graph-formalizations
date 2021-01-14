@@ -1,7 +1,7 @@
-theory DDFS_Summary
+theory Summary
   imports 
-    DDFS
-    DDFS_Vwalk
+    Pair_Graph
+    Vwalk
 begin
 
 text \<open>Summary of the graph formalization DDFS.\<close>

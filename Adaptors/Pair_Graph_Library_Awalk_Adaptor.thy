@@ -1,7 +1,7 @@
-theory DDFS_Library_Awalk_Adaptor
+theory Pair_Graph_Library_Awalk_Adaptor
   imports
-    AGF.DDFS_Awalk_Defs
-    Adaptors.DDFS_Library_Adaptor
+    AGF.Awalk_Defs
+    AGF.Pair_Graph_Library_Adaptor
     Graph_Theory.Arc_Walk
 begin
 

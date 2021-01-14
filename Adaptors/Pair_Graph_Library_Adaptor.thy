@@ -1,7 +1,7 @@
-theory DDFS_Library_Adaptor
+theory Pair_Graph_Library_Adaptor
   imports
-    AGF.DDFS
-    AGF.DDFS_Vwalk
+    AGF.Pair_Graph
+    AGF.Vwalk
     Graph_Theory.Graph_Theory
 begin
 
@@ -56,13 +56,13 @@ text \<open>
 \<close>
 lemma reachable_imp:
   "u \<rightarrow>\<^sup>*\<^bsub>D\<^esub> v \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
-  unfolding reachable_def DDFS.reachable_def
+  unfolding reachable_def Pair_Graph.reachable_def
   by (rule rtrancl_on_mono[of D])
      (auto simp add: dVs_subset_verts dominates_iff)
 
 lemma reachable_imp':
   "u \<in> dVs D \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>D\<^esub> v"
-  unfolding reachable_def DDFS.reachable_def
+  unfolding reachable_def Pair_Graph.reachable_def
   by (auto dest!: rtrancl_on_rtranclI 
            elim: rtrancl.cases 
            intro!: rtrancl_consistent_rtrancl_on 
@@ -152,7 +152,7 @@ text \<open>
   \<^term>\<open>vwalk\<close> requires non-emptiness.
 \<close>
 lemma dpath_imp_vwalk:
-  "DDFS_Vwalk.vwalk D (u # xs) \<Longrightarrow> vwalk (u # xs) G"
+  "Vwalk.vwalk D (u # xs) \<Longrightarrow> vwalk (u # xs) G"
   by (induction xs arbitrary: u)
      (auto simp: dVs_subset_verts)
 
@@ -161,14 +161,14 @@ text \<open>
 \<close>
 lemma vwalk_imp_dpath:
   assumes "u \<in> dVs D"
-  shows "vwalk (u # xs) G \<Longrightarrow> DDFS_Vwalk.vwalk D (u # xs)"
+  shows "vwalk (u # xs) G \<Longrightarrow> Vwalk.vwalk D (u # xs)"
   using assms
   by (induction xs arbitrary: u)
      (auto simp: dVsI)
 
 lemma vwalk_iff:
   assumes "u \<in> dVs D"
-  shows "vwalk (u # xs) G \<longleftrightarrow> DDFS_Vwalk.vwalk D (u # xs)"
+  shows "vwalk (u # xs) G \<longleftrightarrow> Vwalk.vwalk D (u # xs)"
   using assms vwalk_imp_dpath dpath_imp_vwalk by blast
 
 end
@@ -246,7 +246,7 @@ lemma head_eq[simp]:
 
 lemma reachable_iff:
   "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v \<longleftrightarrow> u \<rightarrow>\<^sup>*\<^bsub>digraph_of\<^esub> v"
-  unfolding reachable_def DDFS.reachable_def
+  unfolding reachable_def Pair_Graph.reachable_def
   by simp
 
 lemma reachable1_iff:
@@ -254,7 +254,7 @@ lemma reachable1_iff:
   by simp
 
 lemma vwalk_iff:
-  "p \<noteq> [] \<and> DDFS_Vwalk.vwalk E p \<longleftrightarrow> vwalk p digraph_of"
+  "p \<noteq> [] \<and> Vwalk.vwalk E p \<longleftrightarrow> vwalk p digraph_of"
   by (induction p rule: induct_list012)
      (auto)
 

@@ -1,6 +1,6 @@
-theory DDFS_Awalk_Defs
+theory Awalk_Defs
   imports 
-    AGF.DDFS
+    Pair_Graph
 begin
 
 type_synonym 'a awalk = "('a \<times> 'a) list"

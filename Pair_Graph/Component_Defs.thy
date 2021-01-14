@@ -1,6 +1,6 @@
-theory DDFS_Component_Defs
+theory Component_Defs
   imports
-    AGF.DDFS
+    Pair_Graph
 begin
 
 definition subgraph :: "'a dgraph \<Rightarrow> 'a dgraph \<Rightarrow> bool" where

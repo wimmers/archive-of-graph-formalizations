@@ -1,8 +1,8 @@
-theory DDFS_Library_Component_Adaptor
+theory Pair_Graph_Library_Component_Adaptor
   imports
-    DDFS_Library_Adaptor
-    DDFS_Library_Awalk_Adaptor
-    AGF.DDFS_Component_Defs
+    Pair_Graph_Library_Adaptor
+    Pair_Graph_Library_Awalk_Adaptor
+    AGF.Component_Defs
     Digraph_Component_More
 begin
 
@@ -55,7 +55,7 @@ lemma subgraph_digraph_ofE[elim]:
   assumes "subgraph_digraph H (ddfs.digraph_of G)"
   obtains H' where "H' = arcs H" "subgraph H' G"
   using assms
-  by (simp add: DDFS_Component_Defs.subgraph_def Digraph_Component.subgraph_def)
+  by (simp add: Component_Defs.subgraph_def Digraph_Component.subgraph_def)
 
 lemma subgraph_digraph_ofD:
   assumes "subgraph_digraph H (ddfs.digraph_of G)"

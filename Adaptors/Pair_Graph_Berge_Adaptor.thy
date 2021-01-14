@@ -1,8 +1,8 @@
-theory DDFS_Berge_Adaptor
+theory Pair_Graph_Berge_Adaptor
   imports 
-    AGF.DDFS
-    AGF.DDFS_Vwalk
-    AGF.DDFS_Component
+    AGF.Pair_Graph
+    AGF.Vwalk
+    AGF.Component
     AGF.Berge
 begin
 
@@ -30,7 +30,7 @@ lemma symmetric:
   using edge_iff_edge_2 edge_iff_edges by blast
 
 lemma vwalk_rev_vwalk:
-  "DDFS_Vwalk.vwalk D p \<Longrightarrow> DDFS_Vwalk.vwalk D (rev p)"
+  "Vwalk.vwalk D p \<Longrightarrow> Vwalk.vwalk D (rev p)"
   by (induction rule: vwalk.induct)
      (auto simp add: vwalk_snoc_edge symmetric)
 
@@ -58,7 +58,7 @@ lemma Vs_eq_dVs:
   using in_Vs_iff_in_dVs by blast
 
 lemma path_iff_vwalk:
-  "path E p \<longleftrightarrow> DDFS_Vwalk.vwalk D p"
+  "path E p \<longleftrightarrow> Vwalk.vwalk D p"
   by (induction p rule: edges_of_path.induct)
      (auto simp: in_Vs_iff_in_dVs edge_iff_edges symmetric)
 
@@ -320,7 +320,7 @@ lemma last_in_edge':
   assumes "(p::'a list) \<noteq> []"
   shows "\<exists>u. {u, last p} \<in> set (edges_of_path (v # p)) \<and> u \<in> set (v # p)"
   using assms
-  by (auto dest!: DDFS_Vwalk.last_in_edge simp: edges_of_path_eq intro!: rev_image_eqI)
+  by (auto dest!: Vwalk.last_in_edge simp: edges_of_path_eq intro!: rev_image_eqI)
 
 
 thm edges_of_path_append_subset

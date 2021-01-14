@@ -1,9 +1,9 @@
-theory DDFS_SCC_Graph
+theory SCC_Graph
   imports
-    DDFS_Component_Defs
-    Adaptors.DDFS_Library_Component_Adaptor
-    "Graph_Theory/More_Graph_Theory"
-    "TA_Graphs/TA_Graph_Library_Adaptor"
+    Component_Defs
+    AGF.Pair_Graph_Library_Component_Adaptor
+    AGF.More_Graph_Theory
+    AGF.TA_Graph_Library_Adaptor
 begin
 
 section\<open>SCC graph and DAGs\<close>
@@ -22,14 +22,14 @@ lemma (in wf_digraph) wf_digraph_scc_graph: "wf_digraph scc_graph"
   by (simp add: dag.axioms(1) scc_digraphI)
 text \<open>
   The SCC graph represented as a set of pairs in general is just a subgraph of the
-  SCC graph in Graph_Theory:
+  SCC graph in \<^theory>\<open>Graph_Theory.Digraph\<close>:
 
   When the graph is strongly connected, then in the set of pairs
-  representation the SCC graph is the empty set, while in Graph_Theory it is a graph with 
+  representation the SCC graph is the empty set, while in \<^theory>\<open>Graph_Theory.Digraph\<close> it is a graph with 
   a single vertex (i.e.\ the set of all vertices) and no edges.
 
   Additionally, when there is an SCC with no outgoing edges, it cannot be captured by the
-  set of pairs representation, while that is no problem in Graph_Theory (or any graph
+  set of pairs representation, while that is no problem in \<^theory>\<open>Graph_Theory.Digraph\<close> (or any graph
   representation with an explicit vertex set).
 \<close>
 lemma scc_graph_subset: "subgraph_digraph (ddfs.digraph_of (scc_graph G)) (pre_digraph.scc_graph (ddfs.digraph_of G))"
@@ -57,10 +57,13 @@ lemma ddfs_dagI_digraph_of:
   notes ddfs_library_adaptor_simps[simp del]
   assumes "\<And>u. u \<rightarrow>\<^sup>+\<^bsub>ddfs.digraph_of E\<^esub> u \<Longrightarrow> False"
   shows "ddfs_dag E"
-  apply standard
-  using assms by (auto simp: ddfs.reachable1_iff assms)
+  using assms 
+  by unfold_locales
+     (auto simp flip: ddfs.reachable1_iff)
 
-interpretation ddfs_scc_graph_dag: ddfs_dag "scc_graph E"
+text \<open>How to pose this as interpretation/sublocale without breaking?\<close>
+(* interpretation ddfs_scc_graph_dag: ddfs_dag "scc_graph E" *)
+lemma ddfs_scc_graph_dag: "ddfs_dag (scc_graph E)"
   by (intro ddfs_dagI_digraph_of)
      (meson arcs_ends_mono dag.acyclic ddfs.wf_digraph_digraph_of scc_graph_subset trancl_mono wf_digraph.scc_digraphI)
 

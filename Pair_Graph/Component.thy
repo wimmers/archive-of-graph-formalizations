@@ -1,9 +1,9 @@
-theory DDFS_Component
+theory Component
   imports
-    DDFS_Component_Defs
-    DDFS_Awalk
-    DDFS_Vwalk
-    Adaptors.DDFS_Library_Component_Adaptor
+    Component_Defs
+    Awalk
+    Vwalk
+    AGF.Pair_Graph_Library_Component_Adaptor
 begin
 
 subsection \<open>Basic lemmas\<close>
@@ -195,11 +195,11 @@ lemma induced_subgraphI':
   assumes subg: "subgraph H G"
     and max: "\<And>H'. subgraph H' G \<Longrightarrow> (dVs H' \<noteq> dVs H \<or> subgraph H' H)"
   shows "induced_subgraph H G"
-  by (meson DDFS_Component_Defs.induced_subgraphI adj_mono in_induce_subgraphI induce_subgraph_of_subgraph_verts max subg subgraph_induce_subgraph)
+  by (meson Component_Defs.induced_subgraphI adj_mono in_induce_subgraphI induce_subgraph_of_subgraph_verts max subg subgraph_induce_subgraph)
 
 lemma induced_subgraph_altdef:
   "induced_subgraph H G \<longleftrightarrow> subgraph H G \<and> (\<forall>H'. subgraph H' G \<longrightarrow> dVs H' \<noteq> dVs H \<or> subgraph H' H)"
-  by (metis DDFS_Component.induced_subgraphI' ddfs.verts_eq ddfs.wf_digraph_digraph_of induced_subgraph_iff subgraph_iff subgraph_induce_subgraphI2 induced_subgraphD wf_digraph.induce_eq_iff_induced)
+  by (metis Component.induced_subgraphI' ddfs.verts_eq ddfs.wf_digraph_digraph_of induced_subgraph_iff subgraph_iff subgraph_induce_subgraphI2 induced_subgraphD wf_digraph.induce_eq_iff_induced)
 
 lemma in_induce_subgraph_dVsI_reachable:
   fixes G :: "'a dgraph"
@@ -626,12 +626,12 @@ declare ddfs_library_adaptor_simps[simp del]
 
 subsection \<open>Vertex walks\<close>
 lemma vwalk_subgraph:
-  assumes "DDFS_Vwalk.vwalk E p" "subgraph E E'"
-  shows "DDFS_Vwalk.vwalk E' p"
+  assumes "Vwalk.vwalk E p" "subgraph E E'"
+  shows "Vwalk.vwalk E' p"
   using assms dVs_subset
   by (induction, auto)
 
-lemma vwalk_edges_of_vwalk_refl: "length p \<ge> 2 \<Longrightarrow> DDFS_Vwalk.vwalk (set (edges_of_vwalk p)) p"
+lemma vwalk_edges_of_vwalk_refl: "length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk (set (edges_of_vwalk p)) p"
 proof (induction p rule: edges_of_vwalk.induct)
   case (3 v v' l)
   thus ?case
@@ -639,7 +639,7 @@ proof (induction p rule: edges_of_vwalk.induct)
 qed simp_all
 
 lemma vwalk_edges_subset:
-  assumes "DDFS_Vwalk.vwalk E p"
+  assumes "Vwalk.vwalk E p"
   shows "subgraph (set (edges_of_vwalk p)) E"
   using assms
   by (induction, auto)
@@ -677,10 +677,10 @@ lemma vertex_induced_subgraph_dVs_subset_Int:
   by (simp add: vertex_induced_subgraph_dVs_subset_V vertex_induced_subgraph_subgraph subgraph_dVs)
 
 lemma vwalk_vertex_induced_subgraph_vwalk:
-  assumes "DDFS_Vwalk.vwalk G (u # p @ [v])" \<comment> \<open>vertices are only in the induced subgraph when they don't get disconnected\<close>
+  assumes "Vwalk.vwalk G (u # p @ [v])" \<comment> \<open>vertices are only in the induced subgraph when they don't get disconnected\<close>
   assumes "vertex_induced_subgraph H V G"
   assumes "set (u # p @ [v]) \<subseteq> V"
-  shows "DDFS_Vwalk.vwalk H (u # p @ [v])"
+  shows "Vwalk.vwalk H (u # p @ [v])"
   using assms
   by (induction p arbitrary: u)
      (auto simp: dVsI)

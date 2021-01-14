@@ -1,7 +1,7 @@
-theory DDFS_Awalk
+theory Awalk
   imports 
-    Adaptors.DDFS_Library_Awalk_Adaptor
-    DDFS_Vwalk
+    AGF.Pair_Graph_Library_Awalk_Adaptor
+    Vwalk
 begin
 
 no_notation Digraph.dominates ("_ \<rightarrow>\<index> _")

@@ -1,5 +1,5 @@
-theory DDFS_Vwalk
-  imports DDFS
+theory Vwalk
+  imports Pair_Graph
 begin
 
 context fixes dG :: "'a dgraph" begin
