@@ -192,7 +192,7 @@ lemma arc_to_ends_arc_from_ends_eq:
 end
 
 
-subsection \<open>From DDFS to Digraph\<close>
+subsection \<open>From Pair-Graph to Digraph\<close>
 text \<open>Allows moving lemmas from Digraph to DDFS.\<close>
 locale ddfs =
   fixes E :: "'a dgraph"

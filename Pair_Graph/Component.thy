@@ -610,9 +610,8 @@ lemma
     "C \<in> sccs G"
     "c \<in> dVs C"
     "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
-    "v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> c \<or> c \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
-  oops \<comment> \<open>u --> v <-- w --> C\<close>
-  text\<open>or v is also singleton scc\<close>
+    "v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> c \<or> c \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<notin> dVs (\<Union>(sccs G))"
+  sorry
 
 lemma not_in_dVs_sccs_singleton_scc:
   fixes G :: "'a dgraph"
