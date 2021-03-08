@@ -2,9 +2,8 @@ theory Berge_Kruskal_Arc_Walk
   imports
     AGF.Berge
     Kruskal.Kruskal
-    Adaptors.Berge_UGraph_Adaptor
+    "../Adaptors/Berge_UGraph_Adaptor"
 begin
-
 
 definition connected :: "'a set set \<Rightarrow> ('a \<times> 'a) set" where
   "connected F \<equiv> {(u,v). \<exists>p. epath F u p v}"
@@ -60,12 +59,63 @@ abbreviation "connected_on E' V \<equiv> connected E' \<inter> (V \<times> V)"
 lemma connected_on_eq: "connected_on E' V = uGraph.uconnected_on (ugraph_of E') V"
   by auto
 
+lemma finite_then_finite_comprehension:
+  "finite s \<Longrightarrow> finite {g (f x y) | x y. (f::'a \<Rightarrow> 'b \<Rightarrow> 'd) x y \<in> s}"  (is "?P \<Longrightarrow> ?R")
+proof-
+  have "\<exists>t. {g (f x y) | x y. f x y \<in> s} = t \<inter> (g ` s)"    
+    by (auto simp: image_def inj_on_def)
+  thus "?P \<Longrightarrow> ?R"
+    by auto
+qed
+
+definition doubleton_to_upair where
+ "doubleton_to_upair s = 
+      (let u1 = (SOME u. u \<in> s);
+           u2 = (SOME u. u \<in> (s - {u1}))
+      in Upair u1 u2)"
+
+lemma doubleton_upairs:
+  assumes "u \<noteq> v"
+  shows "doubleton_to_upair {u, v} = Upair u v"
+proof-
+  define some_disj_pred where "some_disj_pred u' \<equiv> u' = u \<or> u' = v" for u'
+  define some_disj where "some_disj \<equiv> (SOME u'. some_disj_pred u')"
+  have *: "some_disj_pred some_disj"
+    apply(subst some_disj_def someI[where P = some_disj_pred and x = u])+
+    by (auto simp: some_disj_pred_def)
+
+  define some_disj_pred_2 where "some_disj_pred_2 u' \<equiv> some_disj_pred u' \<and> u' \<noteq> some_disj" for u'
+  define some_disj_2 where "some_disj_2 \<equiv> (SOME u'. some_disj_pred_2 u')"
+  have **: "some_disj_pred_2 some_disj_2"
+  proof(cases "some_disj = u")
+    case True
+    then show ?thesis
+      apply(subst some_disj_2_def)
+      apply(rule someI[where x = v])
+      using \<open>u \<noteq> v\<close>
+      by (auto simp add: some_disj_pred_def some_disj_pred_2_def)
+  next
+    case False
+    then show ?thesis
+      apply(subst some_disj_2_def)
+      apply(rule someI[where x = u])
+      by(auto simp add: some_disj_pred_def some_disj_pred_2_def)
+  qed
+
+  show ?thesis
+    apply(simp add: doubleton_to_upair_def Let_def some_disj_pred_def[symmetric]
+                    some_disj_def[symmetric])
+    using ** *
+    by(auto simp: some_disj_pred_def some_disj_pred_2_def)
+qed
+
 
 context graph_abs
 begin
 
+
 lemma ugraph_of_uGraph[simp]: "uGraph (ugraph_of E)"
-unfolding ugraph_of_def
+unfolding ugraph_of_def                   
 proof (unfold_locales, goal_cases)
   case (1 e)
   then show ?case
@@ -73,9 +123,16 @@ proof (unfold_locales, goal_cases)
     by fastforce
 next
   case 2
-  then show ?case
-    using finite_E
-    sorry
+  moreover have "u \<noteq> v" if "{u, v} \<in> E" for u v
+    using graph that
+    by fastforce
+  hence "{Upair u v |u v. {u, v} \<in> E} \<subseteq> {doubleton_to_upair {x, y} |x y. {x, y} \<in> E}"
+    using doubleton_eq_iff doubleton_upairs
+    by fastforce
+  ultimately show ?case
+    using finite_then_finite_comprehension[where f = "\<lambda>u v.  {u, v}" and g = doubleton_to_upair, OF finite_E]
+          finite_subset
+    by auto
 qed
 
 lemma vertices_eq: "Vs E = \<Union>(set_uprod ` (ugraph_of E))"
@@ -102,19 +159,16 @@ lemma equiv_verts_connected: "equiv verts (connectedV E')"
   by (auto simp: vertices_eq uGraph.equiv_vert_uconnected)
 
 lemma insert_connectedV_per:
-  assumes "x \<noteq> y" and inV: "x \<in> verts" "y \<in> verts" and subE: "F\<subseteq>E"
-  shows "connectedV (insert {x,y} F) = per_union (connectedV F) x y"
+  "\<lbrakk>x \<noteq> y; x \<in> verts; y \<in> verts; F\<subseteq>E\<rbrakk> \<Longrightarrow> connectedV (insert {x,y} F) = per_union (connectedV F) x y"
   apply (simp add: vertices_eq)
   apply (rule uGraph.insert_uconnectedV_per)
-  using assms apply (auto dest: ugraph_of_mono simp: vertices_eq)
-  done
+  by (auto dest: ugraph_of_mono)
 
 lemma insert_connectedV_per':
-  assumes inV: "x \<in> verts" "y \<in> verts" and subE: "F\<subseteq>E"
-  shows "connectedV (insert {x,y} F) = per_union (connectedV F) x y"
+  "\<lbrakk>x \<in> verts; y \<in> verts; F\<subseteq>E\<rbrakk> \<Longrightarrow> connectedV (insert {x,y} F) = per_union (connectedV F) x y"
   apply (simp add: vertices_eq)
   apply (rule uGraph.insert_uconnectedV_per')
-  using assms by (auto dest: ugraph_of_mono simp: vertices_eq)
+  by (auto dest: ugraph_of_mono simp: vertices_eq)
 
 definition subforest :: "'a set set \<Rightarrow> bool" where
   "subforest F \<equiv> forest F \<and> F \<subseteq> E"
@@ -199,8 +253,9 @@ next
   case (18 a b e T)
   then show ?case 
     unfolding connected_def
+    using graph
     apply (auto simp del: edge_iff_edge intro!: exI[where x="[e]"])
-    using graph by blast
+    by fastforce
 qed
 
 end
