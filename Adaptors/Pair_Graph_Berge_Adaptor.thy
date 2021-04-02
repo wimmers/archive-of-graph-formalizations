@@ -1,3 +1,4 @@
+(*Author: Christoph Madlener *)
 theory Pair_Graph_Berge_Adaptor
   imports 
     AGF.Pair_Graph
@@ -79,7 +80,7 @@ fun undirected :: "'a \<times> 'a \<Rightarrow> 'a set" where
 
 lemma undirected_iff:
   "undirected e = {u, v} \<longleftrightarrow> e = (u, v) \<or> e = (v, u)"
-  by auto (metis doubleton_eq_iff undirected.elims)
+  by (fastforce simp add: doubleton_eq_iff elim!: undirected.elims)
 
 lemma
   shows fst_in_undirected: "fst e \<in> undirected e"
@@ -175,26 +176,23 @@ lemma last_Cons_nonempty: "p \<noteq> [] \<Longrightarrow> Suc 0 < length (last 
 thm Berge.hd_edges_neq_last
 lemma hd_edges_neq_last':
   notes length_greater_0_conv[iff del]
-  assumes "{hd (p::'a list), last p} \<notin> set (edges_of_path p)" "hd p \<noteq> last p" "p \<noteq> []"
-  shows "hd (edges_of_path (last p # p)) \<noteq> last (edges_of_path (last p # p))"
-  using assms
+  shows "\<lbrakk>{hd (p::'a list), last p} \<notin> set (edges_of_path p); hd p \<noteq> last p; p \<noteq> []\<rbrakk> \<Longrightarrow> 
+         hd (edges_of_path (last p # p)) \<noteq> last (edges_of_path (last p # p))"
   by (induction p) (auto elim: edges_of_path.elims simp: insert_commute)
 
 \<comment> \<open>TODO\<close>
 thm distinct_edges_of_vpath
+text \<open>This does not hold for directed graphs\<close>
 lemma distinct_edges_of_vpath':
   "distinct (p::'a list) \<Longrightarrow> distinct (edges_of_path p)"
-  apply (drule distinct_edges_of_vwalk)
-  apply (auto simp: edges_of_path_eq) nitpick 
-  sorry
+  using v_in_edge_in_path
+  by (induction p rule: edges_of_path.induct) fastforce+
 
-thm distinct_edges_of_paths_cons
 lemma distinct_edges_of_paths_cons':
   assumes "distinct (edges_of_path (v # p))"
   shows "distinct (edges_of_path (p::'a list))"
   using assms
-  by (cases p)
-     (auto simp:)
+  by (cases p) (auto)
 
 thm tl_path_is_path
 lemma "path E p \<Longrightarrow> path E (tl p)"

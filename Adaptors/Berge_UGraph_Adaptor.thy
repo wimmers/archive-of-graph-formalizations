@@ -1,3 +1,4 @@
+(*Author: Christoph Madlener *)
 theory Berge_UGraph_Adaptor
   imports
     AGF.Berge

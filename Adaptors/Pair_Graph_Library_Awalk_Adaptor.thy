@@ -1,3 +1,4 @@
+(*Author: Christoph Madlener *)
 theory Pair_Graph_Library_Awalk_Adaptor
   imports
     AGF.Awalk_Defs

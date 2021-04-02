@@ -1,3 +1,4 @@
+(*Author: Christoph Madlener *)
 theory Pair_Graph_Library_Adaptor
   imports
     AGF.Pair_Graph

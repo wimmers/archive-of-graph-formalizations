@@ -1,3 +1,4 @@
+(*Author: Christoph Madlener *)
 theory Digraph_Component_More
   imports Graph_Theory.Digraph_Component
 begin
@@ -41,7 +42,6 @@ proof -
   then show ?thesis by blast
 qed
 
-
 lemma strongly_connected_not_singleton_arcs_nonempty:
   assumes sc: "strongly_connected H"
   assumes not_singleton: "u \<in> verts H" "verts H \<noteq> {u}"
@@ -53,6 +53,5 @@ proof -
     by (meson pre_digraph.converse_reachable_cases reachableE sc strongly_connectedE)
   then show ?thesis by blast
 qed
-
 
 end

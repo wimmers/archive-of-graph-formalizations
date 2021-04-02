@@ -1,7 +1,9 @@
+(*Author: Christoph Madlener *)
+
 theory Adaptors_Summary
   imports
-    DDFS_Berge_Adaptor
-    DDFS_Library_Adaptor
+    Pair_Graph_Berge_Adaptor
+    Pair_Graph_Library_Adaptor
 begin
 
 text \<open>
@@ -25,12 +27,12 @@ text \<open>
 
 section \<open>Graph-Theory and DDFS\<close>
 text \<open>
-  The first adaptor in \<^theory>\<open>Adaptors.DDFS_Library_Adaptor\<close> implements both directions for 
+  The first adaptor in \<^theory>\<open>Pair_Graph_Library_Adaptor\<close> implements both directions for 
   \<^theory>\<open>Graph_Theory.Digraph\<close>s  and \<^theory>\<open>AGF.DDFS\<close>.
 \<close>
 subsection \<open>Graph-Theory to DDFS\<close>
 text \<open>
-  The first part implements the adaptor from Noschinski's Graph-Theory digraphs to \<^theory>\<open>AGF.DDFS\<close>
+  The first part implements the adaptor from Noschinski's Graph-Theory digraphs to \<^theory>\<open>AGF.Pair_Graph\<close>
   graphs. Constructing the DDFS graph is relatively straightforward as \<^theory>\<open>Graph_Theory.Digraph\<close>
   already provides \<^term>\<open>arcs_ends\<close>. This definition maps the set of (abstract) arcs to a set of pairs
   which is a graph in the DDFS representation. As DDFS is not capable of representing multigraphs,
