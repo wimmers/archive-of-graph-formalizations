@@ -1,7 +1,7 @@
 theory Digraph_Summary
   imports Graph_Theory.Graph_Theory 
     "../Graph_Theory/Directed_Tree"
-  "../TA_Graphs/TA_Graph_Library_Adaptor"
+    "../Adaptors/TA_Graph_Library_Adaptor"
 begin
 
 text \<open>This theory collects basic concepts about directed graphs in Noschinski's digraph library.\<close>
