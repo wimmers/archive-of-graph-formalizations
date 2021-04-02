@@ -1,8 +1,0 @@
-session Findings_Pair_Graph = AGF +
-  options [document = pdf, document_output = "output"]
-
-  theories
-    "Findings_Pair_Graph"
-
-  document_files
-    "root.tex"
