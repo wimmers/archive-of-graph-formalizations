@@ -1,9 +1,9 @@
 theory Component
   imports
     Component_Defs
+    AGF.Pair_Graph_Library_Component_Adaptor
     Awalk
     Vwalk
-    AGF.Pair_Graph_Library_Component_Adaptor
 begin
 
 subsection \<open>Basic lemmas\<close>
@@ -91,30 +91,29 @@ lemma subgraph_cycle:
   using assms
   by (simp add: subgraph_iff ddfs.cycle_iff_cycle wf_digraph.subgraph_cycle)
 
-
 subsection \<open>Induced subgraphs\<close>
 
 lemma digraph_of_induce_eq:
-  "ddfs.digraph_of (G \<restriction> vs) = \<lparr>verts = dVs (G \<restriction> vs), arcs = arcs ((ddfs.digraph_of G) \<restriction> vs), tail = fst, head = snd\<rparr>"
+  "ddfs.digraph_of (G \<downharpoonright> vs) = \<lparr>verts = dVs (G \<downharpoonright> vs), arcs = arcs ((ddfs.digraph_of G) \<restriction> vs), tail = fst, head = snd\<rparr>"
   unfolding induce_subgraph_def Digraph_Component.induce_subgraph_def ddfs.digraph_of_def
   by auto
 
 lemma digraph_of_induce_arcs_eq:
-  "arcs (ddfs.digraph_of (G \<restriction> vs)) = arcs ((ddfs.digraph_of G) \<restriction> vs)"
+  "arcs (ddfs.digraph_of (G \<downharpoonright> vs)) = arcs ((ddfs.digraph_of G) \<restriction> vs)"
   by (simp add: digraph_of_induce_eq)
 
 lemma digraph_of_induce_arcs_ends_eq:
-  "arcs_ends (ddfs.digraph_of (G \<restriction> vs)) = arcs_ends ((ddfs.digraph_of G) \<restriction> vs)"
+  "arcs_ends (ddfs.digraph_of (G \<downharpoonright> vs)) = arcs_ends ((ddfs.digraph_of G) \<restriction> vs)"
   unfolding arcs_ends_def
   by (auto simp add: digraph_of_induce_arcs_eq induce_subgraph_def)
 
 
 lemma induce_dVs_subset:
-  "u \<in> dVs (G \<restriction> S) \<Longrightarrow> u \<in> S"
+  "u \<in> dVs (G \<downharpoonright> S) \<Longrightarrow> u \<in> S"
   unfolding induce_subgraph_def dVs_def by blast
 
 lemma induced_induce:
-  shows "induced_subgraph (G \<restriction> vs) G"
+  shows "induced_subgraph (G \<downharpoonright> vs) G"
   by (auto simp: induced_subgraph_def dVs_def induce_subgraph_def)
 
 lemma induced_graph_imp_symmetric:
@@ -124,62 +123,96 @@ lemma induced_graph_imp_symmetric:
   using assms
   by (simp add: ddfs.symmetric_iff induced_subgraph_iff induced_graph_imp_symmetric)
 
-lemma induce_reachable_preserves_paths:
-  fixes G :: "'a dgraph"
-  assumes "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
-  assumes "{w. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> w} \<noteq> {u}"
-  shows "u \<rightarrow>\<^sup>*\<^bsub>G \<restriction> {w. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> w}\<^esub> v"
+lemma vwalk_induce:
+  "\<lbrakk>Vwalk.vwalk (G::'a dgraph) p; set p \<subseteq> vs; length p \<ge> 2\<rbrakk> \<Longrightarrow>
+        Vwalk.vwalk (G \<downharpoonright> vs) p"
+proof(induction p arbitrary: vs rule: Vwalk.vwalk.induct)
+  case (vwalk2 v v' vs)
+  then show ?case
+    apply -
+    by (erule Vwalk.vwalk.cases ; auto simp: induce_subgraph_def dVs_def)
+qed (auto simp: induce_subgraph_def dVs_def)
+
+lemma vwalk_bet_induce:
+  assumes "Vwalk.vwalk_bet (G::'a dgraph) u p v"
+  shows "\<lbrakk>set p \<subseteq> vs; u \<noteq> v\<rbrakk> \<Longrightarrow>
+        Vwalk.vwalk_bet (G \<downharpoonright> vs) u p v"
+  using vwalk_bet_nonempty_vwalk[OF assms]
+  by (auto simp: neq_Nil_conv eval_nat_numeral Suc_le_length_iff split: if_splits
+           intro!: vwalk_induce nonempty_vwalk_vwalk_bet)
+
+lemma reachable_then_vwalk_bet_subset:
+  assumes "u \<rightarrow>\<^sup>*\<^bsub>G::'a dgraph\<^esub> w"
+  obtains p where "Vwalk.vwalk_bet (G::'a dgraph) u p w" "set p \<subseteq> {w | w . u \<rightarrow>\<^sup>*\<^bsub>G::'a dgraph\<^esub> w}"
   using assms
-proof (induction)
+proof(induction arbitrary: thesis)
   case base
-  then show ?case sorry
+  then show ?case
+    by (force simp add: Vwalk.vwalk_bet_def)
 next
   case (step x y)
-  then show ?case sorry
+  then obtain p' where "Vwalk.vwalk_bet G y p' w" "set p' \<subseteq> {w |w. y \<rightarrow>\<^sup>*\<^bsub>G\<^esub> w}"
+    by(elim step(3))
+  moreover have "{w |w. y \<rightarrow>\<^sup>*\<^bsub>G\<^esub> w} \<subseteq> {w |w. x \<rightarrow>\<^sup>*\<^bsub>G\<^esub> w}"
+    using step(1)
+    by force
+  ultimately have "Vwalk.vwalk_bet (G::'a dgraph) x (x#p') w"
+                  "set (x#p') \<subseteq> {w | w . x \<rightarrow>\<^sup>*\<^bsub>G::'a dgraph\<^esub> w}"
+    using \<open>x \<rightarrow>\<^bsub>G\<^esub> y\<close>
+    by (auto simp: vwalk_bet_def intro!: Vwalk.vwalkI dVsI(1))
+  thus ?case
+    using step.prems
+    by auto
 qed
+
+lemma induce_reachable_preserves_paths:
+  fixes G :: "'a dgraph"
+  shows "\<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v; u \<noteq> v \<rbrakk> \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G \<downharpoonright> {w. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> w}\<^esub> v"
+  by (auto dest: vwalk_bet_induce[where vs ="{w. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> w}"] intro: reachable_vwalk_betD
+           elim!: reachable_then_vwalk_bet_subset)
 
 lemma dominates_induce_subgraphD:
   fixes G :: "'a dgraph"
-  assumes "u \<rightarrow>\<^bsub>G \<restriction> S\<^esub> v"
+  assumes "u \<rightarrow>\<^bsub>G \<downharpoonright> S\<^esub> v"
   shows "u \<rightarrow>\<^bsub>G\<^esub> v"
   using assms subgraph_def subgraph_induce_subgraph by auto
 
 lemma induce_subgraph_mono:
-  "S \<subseteq> T \<Longrightarrow> subgraph (G \<restriction> S) (G \<restriction> T)"
+  "S \<subseteq> T \<Longrightarrow> subgraph (G \<downharpoonright> S) (G \<downharpoonright> T)"
   by (auto simp: induce_subgraph_def)
   
 lemma reachable_induce_subgraphD:
   fixes G :: "'a dgraph"
-  assumes "u \<rightarrow>\<^sup>*\<^bsub>G \<restriction> S\<^esub> v"
+  assumes "u \<rightarrow>\<^sup>*\<^bsub>G \<downharpoonright> S\<^esub> v"
   shows "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
   using assms
   by (auto simp add: subgraph_induce_subgraph intro: reachable_mono)
 
 lemma dominates_induce_ss:
   fixes G :: "'a dgraph"
-  assumes "u \<rightarrow>\<^bsub>G \<restriction> S\<^esub> v" "S \<subseteq> T"
-  shows "u \<rightarrow>\<^sup>*\<^bsub>G \<restriction> T\<^esub> v"
+  assumes "u \<rightarrow>\<^bsub>G \<downharpoonright> S\<^esub> v" "S \<subseteq> T"
+  shows "u \<rightarrow>\<^sup>*\<^bsub>G \<downharpoonright> T\<^esub> v"
   using assms
   by (auto simp: induce_subgraph_def)
 
 lemma reachable_induce_ss:
   fixes G :: "'a dgraph"
-  assumes "u \<rightarrow>\<^sup>*\<^bsub>G \<restriction> S\<^esub> v" "S \<subseteq> T"
-  shows "u \<rightarrow>\<^sup>*\<^bsub>G \<restriction> T\<^esub> v"
+  assumes "u \<rightarrow>\<^sup>*\<^bsub>G \<downharpoonright> S\<^esub> v" "S \<subseteq> T"
+  shows "u \<rightarrow>\<^sup>*\<^bsub>G \<downharpoonright> T\<^esub> v"
   using assms
   by (auto intro: reachable_mono dest: induce_subgraph_mono)
 
 lemma in_induce_subgraph_dVsI:
   assumes "u \<in> vs"
     and  "\<exists>v \<in> vs. (u, v) \<in> G \<or> (v, u) \<in> G"
-  shows "u \<in> dVs (G \<restriction> vs)"
+  shows "u \<in> dVs (G \<downharpoonright> vs)"
   using assms
   unfolding induce_subgraph_def
   by (auto intro: dVsI)
 
 lemma awalk_induce:
   assumes "awalk G u p v" "set (awalk_verts u p) \<subseteq> S" "p \<noteq> []"
-  shows "awalk (G \<restriction> S) u p v"
+  shows "awalk (G \<downharpoonright> S) u p v"
   unfolding awalk_def
   using assms
   apply (auto simp: hd_in_awalk_verts set_awalk_verts image_subset_iff intro!: in_induce_subgraph_dVsI)
@@ -187,7 +220,7 @@ lemma awalk_induce:
   by (metis (no_types, lifting) CollectI awalkE' case_prodI fst_conv induce_subgraph_def snd_conv subsetD)
 
 lemma induce_subgraph_of_subgraph_verts[simp]:
-  "subgraph H G \<Longrightarrow> dVs (G \<restriction> dVs H) = dVs H"
+  "subgraph H G \<Longrightarrow> dVs (G \<downharpoonright> dVs H) = dVs H"
   unfolding subgraph_def induce_subgraph_def dVs_def
   by blast
 
@@ -208,7 +241,7 @@ lemma in_induce_subgraph_dVsI_reachable:
     and "S \<in> sccs_dVs G"
     and "S \<noteq> {u} \<or> (u,v) \<in> G"
     and "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
-  shows "u \<in> dVs (G \<restriction> S)" "v \<in> dVs (G \<restriction> S)"
+  shows "u \<in> dVs (G \<downharpoonright> S)" "v \<in> dVs (G \<downharpoonright> S)"
   using assms
   by (auto intro!: in_induce_subgraph_dVsI simp: sccs_dVs_def)
      (metis (no_types, lifting) converse_tranclE reachable1_reachable reachable_neq_reachable1 trancl.intros(1) trancl_trans)+
@@ -216,22 +249,22 @@ lemma in_induce_subgraph_dVsI_reachable:
 lemma induce_sccs_dVs:
   assumes "S \<in> sccs_dVs G"
   assumes "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> G"
-  shows "dVs (G \<restriction> S) = S"
+  shows "dVs (G \<downharpoonright> S) = S"
 proof
-  show "dVs (G \<restriction> S) \<subseteq> S" by (auto dest: induce_dVs_subset)
-  then show "S \<subseteq> dVs (G \<restriction> S)"
+  show "dVs (G \<downharpoonright> S) \<subseteq> S" by (auto dest: induce_dVs_subset)
+  then show "S \<subseteq> dVs (G \<downharpoonright> S)"
     by (smt Diff_eq_empty_iff assms in_induce_subgraph_dVsI_reachable(2) in_sccs_dVsD(2) insert_Diff subsetI)
 qed
 
 lemma induce_sccs_dVs_digraph_of_eq:
   assumes "S \<in> sccs_dVs G"
   assumes "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> G"
-  shows "ddfs.digraph_of (G \<restriction> S) = ddfs.digraph_of G \<restriction> S"
+  shows "ddfs.digraph_of (G \<downharpoonright> S) = ddfs.digraph_of G \<restriction> S"
   using assms
   by (metis (no_types, lifting) induced_subgraphI ddfs.verts_eq ddfs.wf_digraph_digraph_of in_induce_subgraphI induce_sccs_dVs induced_subgraph_iff subgraph_induce_subgraph wf_digraph.induce_eq_iff_induced)
 
 lemma induce_subgraph_singleton_conv:
-  "v \<in> dVs (G \<restriction> {u}) \<longleftrightarrow> v = u \<and> (u,u) \<in> G"
+  "v \<in> dVs (G \<downharpoonright> {u}) \<longleftrightarrow> v = u \<and> (u,u) \<in> G"
   unfolding induce_subgraph_def dVs_def
   by auto
 
@@ -271,7 +304,7 @@ lemma max_subgraph_subg_eq:
   by (auto elim: max_subgraphE)
 
 lemma subgraph_induce_subgraphI2:
-  "subgraph H G \<Longrightarrow> subgraph H (G \<restriction> dVs H)"
+  "subgraph H G \<Longrightarrow> subgraph H (G \<downharpoonright> dVs H)"
   by (auto simp: subgraph_def induce_subgraph_def dVsI)
 
 definition arc_mono :: "('a dgraph \<Rightarrow> bool) \<Rightarrow> bool" where
@@ -327,12 +360,12 @@ lemma strongly_connected_spanning_imp_strongly_connected:
 lemma strongly_connected_imp_induce_subgraph_strongly_connected:
   assumes subg: "subgraph H G"
     and sc: "strongly_connected H"
-  shows "strongly_connected (G \<restriction> dVs H)"
-  by (auto intro: strongly_connected_spanning_imp_strongly_connected[of H "G \<restriction> dVs H"] 
+  shows "strongly_connected (G \<downharpoonright> dVs H)"
+  by (auto intro: strongly_connected_spanning_imp_strongly_connected[of H "G \<downharpoonright> dVs H"] 
            simp: sc spanning_def subg subgraph_induce_subgraphI2)
 
 lemma sccs_dVs_restrict_eq:
-  "S \<in> dVs ` sccs G \<Longrightarrow> dVs (G \<restriction> S) = S"
+  "S \<in> dVs ` sccs G \<Longrightarrow> dVs (G \<downharpoonright> S) = S"
   by (auto dest: induce_dVs_subset induced_subgraphD elim!: in_sccsE)
 
 
@@ -393,13 +426,13 @@ begin
   lemma reachable_induced:
     assumes conn: "u \<in> S" "v \<in> S" "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
     assumes "S \<noteq> {u} \<or> (u,u) \<in> E"
-    shows "u \<rightarrow>\<^sup>*\<^bsub>E \<restriction> S\<^esub> v"
+    shows "u \<rightarrow>\<^sup>*\<^bsub>E \<downharpoonright> S\<^esub> v"
     using assms S_in_sv
     by (simp add: sccs_dVs_eq induce_sccs_dVs_digraph_of_eq ddfs.reachable_iff digraph_max_r_set.reachable_induced)
   
   lemma strongly_connected:
     assumes "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> E"
-    shows "strongly_connected (E \<restriction> S)"
+    shows "strongly_connected (E \<downharpoonright> S)"
     using assms S_in_sv
     by (simp add: induce_sccs_dVs_digraph_of_eq strongly_connected_iff digraph_max_r_set.strongly_connected)
 
@@ -408,7 +441,7 @@ end
 lemma in_sccs_dVsD_sccs:
   assumes "S \<in> sccs_dVs G"
   assumes "u \<in> S" "S \<noteq> {u} \<or> (u,u) \<in> G"
-  shows "G \<restriction> S \<in> sccs G"
+  shows "G \<downharpoonright> S \<in> sccs G"
   using assms wf_digraph.in_verts_sccsD_sccs ddfs.wf_digraph_digraph_of
   unfolding in_sccs_iff sccs_dVs_eq induce_sccs_dVs_digraph_of_eq[OF assms]
   by blast
@@ -444,7 +477,7 @@ next
 qed
 
 text \<open>
-  \<^term>\<open>G \<restriction> {u} = {}\<close> if \<^term>\<open>(u,u) \<notin> G\<close>.
+  \<^term>\<open>G \<downharpoonright> {u} = {}\<close> if \<^term>\<open>(u,u) \<notin> G\<close>.
 \<close>
 lemma sccs_conv_sccs_dVs: 
   "sccs G = induce_subgraph G ` sccs_dVs G - {{}}" (is "?L = ?R")
@@ -531,7 +564,7 @@ lemma scc_disj:
 
 lemma induce_in_sccs_imp_in_sccs_dVs:
   assumes "S \<subseteq> dVs G"
-  assumes "G \<restriction> S \<in> sccs G"
+  assumes "G \<downharpoonright> S \<in> sccs G"
   shows "S \<in> sccs_dVs G"
   using assms
   apply (simp add: sccs_dVs_eq in_sccs_iff)
@@ -561,9 +594,9 @@ lemma scc_of_eq': "u \<in> scc_of G v \<Longrightarrow> scc_of G u = scc_of G v"
 lemma strongly_connected_eq_iff:
   "strongly_connected G \<longleftrightarrow> sccs G = {G}"
   apply (auto simp add: strongly_connected_iff in_sccs_iff wf_digraph.strongly_connected_eq_iff)
-    apply (metis ddfs.arcs_ends_eq)+
-  by (metis Digraph_Component.subgraph_def ddfs.digraph_of_pair_conv empty_iff in_sccsE insert_iff pre_digraph.in_sccsE pre_digraph.induced_subgraph_altdef strongly_connected_iff wf_digraph.strongly_connected_eq_iff)
-
+  by (metis Digraph_Component.subgraph_def ddfs.digraph_of_pair_conv empty_iff in_sccsE insert_iff
+            pre_digraph.in_sccsE pre_digraph.induced_subgraph_altdef strongly_connected_iff
+            wf_digraph.strongly_connected_eq_iff ddfs.arcs_ends_eq)+
 
 lemma union_sccs_subset: "\<Union>(sccs G) \<subseteq> G"
   by  (auto elim!: in_sccsE induced_subgraphE)
@@ -587,11 +620,12 @@ proof (cases "u \<in> dVs G")
       using \<open>u \<noteq> v\<close>
       by (auto simp add:  \<open>v \<in> dVs G\<close> scc_of_in_sccs_dVs)
   
-    have "G \<restriction> scc_of G v \<in> sccs G"
+    have "G \<downharpoonright> scc_of G v \<in> sccs G"
       using \<open>u \<in> scc_of G v\<close> \<open>u \<noteq> v\<close> \<open>v \<in> dVs G\<close> in_sccs_dVsD_sccs scc_of_in_sccs_dVs by fastforce
 
     then have False
-      by (smt Sup_upper \<open>scc_of G v \<in> sccs_dVs G\<close> \<open>u \<in> scc_of G v\<close> \<open>u \<noteq> v\<close> \<open>v \<in> scc_of G v\<close> assms dVs_subset empty_iff induce_sccs_dVs insert_Diff insert_iff insert_subset)
+      by (smt Sup_upper \<open>scc_of G v \<in> sccs_dVs G\<close> \<open>u \<in> scc_of G v\<close> \<open>u \<noteq> v\<close> \<open>v \<in> scc_of G v\<close> assms
+              dVs_subset empty_iff induce_sccs_dVs insert_Diff insert_iff insert_subset)
   }
   then show ?thesis
     by blast
@@ -601,24 +635,23 @@ next
     by (auto dest: reachable_in_dVs)
 qed
 
-lemma
+lemma vertex_not_in_sccs:
   fixes G :: "'a dgraph"
   assumes "u \<in> dVs G"
   assumes "u \<notin> dVs (\<Union>(sccs G))"
-  assumes "connected G" "sccs G \<noteq> {}"
+  assumes "sccs G \<noteq> {}"
   obtains v C c where 
     "C \<in> sccs G"
     "c \<in> dVs C"
     "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u"
     "v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> c \<or> c \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> v \<notin> dVs (\<Union>(sccs G))"
-  sorry
+  by (metis Component_Defs.strongly_connected_def all_not_in_conv assms dVs_empty_iff in_sccsD(2)
+            reachable_refl)
 
 lemma not_in_dVs_sccs_singleton_scc:
   fixes G :: "'a dgraph"
-  assumes "u \<in> dVs G"
-  assumes "u \<notin> dVs (\<Union>(sccs G))"
-  shows "scc_of G u = {u}"
-  using assms in_scc_ofD not_in_dVs_sccs_not_reachable_and_reach
+  shows "\<lbrakk>u \<in> dVs G; u \<notin> dVs (\<Union>(sccs G))\<rbrakk> \<Longrightarrow> scc_of G u = {u}"
+  using in_scc_ofD not_in_dVs_sccs_not_reachable_and_reach
   by fastforce
 
 declare ddfs_library_adaptor_simps[simp del]
@@ -628,7 +661,7 @@ lemma vwalk_subgraph:
   assumes "Vwalk.vwalk E p" "subgraph E E'"
   shows "Vwalk.vwalk E' p"
   using assms dVs_subset
-  by (induction, auto)
+  by induction auto
 
 lemma vwalk_edges_of_vwalk_refl: "length p \<ge> 2 \<Longrightarrow> Vwalk.vwalk (set (edges_of_vwalk p)) p"
 proof (induction p rule: edges_of_vwalk.induct)
@@ -638,17 +671,14 @@ proof (induction p rule: edges_of_vwalk.induct)
 qed simp_all
 
 lemma vwalk_edges_subset:
-  assumes "Vwalk.vwalk E p"
-  shows "subgraph (set (edges_of_vwalk p)) E"
-  using assms
-  by (induction, auto)
+  "Vwalk.vwalk E p \<Longrightarrow> subgraph (set (edges_of_vwalk p)) E"
+  by (induction p rule: Vwalk.vwalk.induct) auto
 
 lemma vwalk_bet_subgraph:
-  assumes "subgraph E E'"
-  assumes "vwalk_bet E p u v"
-  shows "vwalk_bet E' p u v"
-  using assms vwalk_subgraph
-  unfolding vwalk_bet_def by blast
+  "\<lbrakk>subgraph E E'; vwalk_bet E p u v\<rbrakk> \<Longrightarrow> vwalk_bet E' p u v"
+  using vwalk_subgraph
+  unfolding vwalk_bet_def
+  by blast
 
 subsection \<open>Vertex induced subgraphs\<close>
 definition vertex_induced_subgraph :: "('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> bool" where
@@ -681,8 +711,7 @@ lemma vwalk_vertex_induced_subgraph_vwalk:
   assumes "set (u # p @ [v]) \<subseteq> V"
   shows "Vwalk.vwalk H (u # p @ [v])"
   using assms
-  by (induction p arbitrary: u)
-     (auto simp: dVsI)
+  by (induction p arbitrary: u) (auto simp: dVsI)
 
 lemma vwalk_bet_vertex_induced_subgraph:
   assumes "vwalk_bet G u (u # p @ [v]) v"

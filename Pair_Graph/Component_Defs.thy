@@ -6,11 +6,11 @@ begin
 definition subgraph :: "'a dgraph \<Rightarrow> 'a dgraph \<Rightarrow> bool" where
   "subgraph H G \<equiv> H \<subseteq> G"
 
-definition induce_subgraph :: "'a dgraph \<Rightarrow> 'a set \<Rightarrow> 'a dgraph" (infix "\<restriction>" 67) where
-  "G \<restriction> vs \<equiv> {(u,v) \<in> G. u \<in> vs \<and> v \<in> vs}"
+definition induce_subgraph :: "'a dgraph \<Rightarrow> 'a set \<Rightarrow> 'a dgraph" (infix "\<downharpoonright>" 67) where
+  "G \<downharpoonright> vs \<equiv> {(u,v) \<in> G. u \<in> vs \<and> v \<in> vs}"
 
 definition induced_subgraph :: "'a dgraph \<Rightarrow> 'a dgraph \<Rightarrow> bool" where
-  "induced_subgraph H G \<equiv> H = G \<restriction> dVs H"
+  "induced_subgraph H G \<equiv> H = G \<downharpoonright> dVs H"
 
 definition spanning :: "'a dgraph \<Rightarrow> 'a dgraph \<Rightarrow> bool" where
   "spanning H G \<equiv> subgraph H G \<and> dVs G = dVs H"
@@ -29,8 +29,9 @@ definition max_subgraph :: "'a dgraph \<Rightarrow> ('a dgraph \<Rightarrow> boo
     (\<forall>H'. H' \<noteq> H \<and> subgraph H H' \<longrightarrow> \<not>(subgraph H' G \<and> P H'))"
 
 definition sccs :: "'a dgraph \<Rightarrow> 'a dgraph set" where
-  "sccs G \<equiv> {H. induced_subgraph H G \<and> strongly_connected H \<and> \<not>(\<exists>H'. induced_subgraph H' G
-      \<and> strongly_connected H' \<and>  H \<subset> H')}"
+  "sccs G \<equiv> 
+     {H. induced_subgraph H G \<and> strongly_connected H \<and>
+         \<not>(\<exists>H'. induced_subgraph H' G \<and> strongly_connected H' \<and>  H \<subset> H')}"
 
 definition sccs_dVs :: "'a dgraph \<Rightarrow> 'a set set" where
   "sccs_dVs G \<equiv> {S. S \<noteq> {} \<and> (\<forall>u \<in> S. \<forall>v \<in> S. u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v) \<and> (\<forall>u \<in> S. \<forall>v. v \<notin> S \<longrightarrow> \<not>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<or> \<not>v \<rightarrow>\<^sup>*\<^bsub>G\<^esub> u)}"
@@ -67,29 +68,29 @@ lemma subgraphE[elim]:
 
 lemma in_induce_subgraphI[intro]:
   assumes "(u,v) \<in> G" "u \<in> vs" "v \<in> vs"
-  shows "(u,v) \<in> G \<restriction> vs"
+  shows "(u,v) \<in> G \<downharpoonright> vs"
   using assms
   unfolding induce_subgraph_def
   by simp
 
 lemma in_induce_subgraphD:
-  assumes "(u,v) \<in> G \<restriction> vs"
+  assumes "(u,v) \<in> G \<downharpoonright> vs"
   shows "(u,v) \<in> G" "u \<in> vs" "v \<in> vs"
   using assms unfolding induce_subgraph_def
   by auto
 
 lemma in_induce_subgraphE[elim?]:
-  assumes "(u,v) \<in> G \<restriction> vs"
+  assumes "(u,v) \<in> G \<downharpoonright> vs"
   obtains "(u,v) \<in> G" "u \<in> vs" "v \<in> vs"
   using assms
   by (auto dest: in_induce_subgraphD)
 
 lemma subgraph_induce_subgraph:
-  "subgraph (G \<restriction> vs) G"
+  "subgraph (G \<downharpoonright> vs) G"
   by (auto dest: in_induce_subgraphD)
 
 lemma subgraph_induce_subgraph':
-  "H = (G \<restriction> vs) \<Longrightarrow> subgraph H G"
+  "H = (G \<downharpoonright> vs) \<Longrightarrow> subgraph H G"
   by (simp add: subgraph_induce_subgraph)
 
 lemma induced_subgraphI[intro]:
@@ -144,12 +145,6 @@ lemma strongly_connectedD:
   shows "G \<noteq> {}" "\<And>u v. \<lbrakk>u \<in> dVs G; v \<in> dVs G\<rbrakk> \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
   using assms unfolding strongly_connected_def
   by auto
-
-lemma strongly_connectedE[elim?]:
-  assumes "strongly_connected G"
-  obtains "G \<noteq> {}" "\<And>u v. \<lbrakk>u \<in> dVs G; v \<in> dVs G\<rbrakk> \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v"
-  using assms
-  by (auto dest: strongly_connectedD)
 
 lemma in_mk_symmetricI[intro]:
   assumes "(u,v) \<in> G \<or> (v,u) \<in> G"
@@ -234,8 +229,8 @@ lemma in_sccsD:
   assumes "H \<in> sccs G"
   shows "induced_subgraph H G" "strongly_connected H"
   and "\<And>H'. \<lbrakk>induced_subgraph H' G; strongly_connected H'; H \<subset> H'\<rbrakk> \<Longrightarrow> False"
-  using assms unfolding sccs_def
-  by auto
+  using assms
+  by (auto simp: sccs_def)
 
 lemma in_sccsE[elim?]:
   assumes "H \<in> sccs G"
