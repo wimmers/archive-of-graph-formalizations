@@ -22,6 +22,7 @@ session "AGF" = "HOL-Library" +
     "Adaptors/Pair_Graph_Library_Adaptor"
     "Adaptors/Pair_Graph_Library_Awalk_Adaptor"
     "Adaptors/Pair_Graph_Library_Component_Adaptor"
+    "Adaptors/TA_Graph_Library_Adaptor"
     
     "Directed_Graphs/Digraph_Summary"
 
@@ -36,13 +37,12 @@ session "AGF" = "HOL-Library" +
     "Pair_Graph/Component"
     "Pair_Graph/SCC_Graph"
     "Pair_Graph/Summary"
+    "Pair_Graph/Findings_Pair_Graph"
 
     "TA_Graphs/TA_Graphs"
     "TA_Graphs/TA_Graph_Summary"
-    "TA_Graphs/TA_Graph_Library_Adaptor"
     "TA_Graphs/Instantiate_Existentials"
     "TA_Graphs/More_List"
-    "TA_Graphs/Stream_More"
 
     "Undirected_Graphs/Berge"
     "Undirected_Graphs/summary1"
