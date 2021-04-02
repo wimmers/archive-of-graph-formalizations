@@ -159,29 +159,24 @@ lemma edges_of_vwalk_for_inner':
   obtains u where "(u, v) = edges_of_vwalk p ! i"
   using assms by (simp add: edges_of_vwalk_index)
 
-lemma hd_edges_neq_last:
-  assumes "(last p, hd p) \<notin> set (edges_of_vwalk p)" "hd p \<noteq> last p" "p \<noteq> []"
-  shows "hd (edges_of_vwalk (last p # p)) \<noteq> last (edges_of_vwalk (last p # p))"
-  using assms
+lemma hd_edges_neq_last:  
+  "\<lbrakk>(last p, hd p) \<notin> set (edges_of_vwalk p); hd p \<noteq> last p; p \<noteq> []\<rbrakk> \<Longrightarrow>
+   hd (edges_of_vwalk (last p # p)) \<noteq> last (edges_of_vwalk (last p # p))"
   by (induction p) (auto elim: edges_of_vwalk.elims)
 
 lemma v_in_edge_in_vwalk: 
   assumes "(u, v) \<in> set (edges_of_vwalk p)"
   shows "u \<in> set p" "v \<in> set p"
   using assms
-  by (induction p rule: edges_of_vwalk.induct, auto)
+  by (induction p rule: edges_of_vwalk.induct) auto
 
 
 lemma distinct_edges_of_vwalk:
-  assumes "distinct p"
-  shows "distinct (edges_of_vwalk p)"
-  using assms
-  by (induction p rule: edges_of_vwalk.induct, auto dest: v_in_edge_in_vwalk)
+  "distinct p \<Longrightarrow> distinct (edges_of_vwalk p)"
+  by (induction p rule: edges_of_vwalk.induct) (auto dest: v_in_edge_in_vwalk)
 
 lemma distinct_edges_of_vwalk_cons:
-  assumes "distinct (edges_of_vwalk (v # p))"
-  shows "distinct (edges_of_vwalk p)"
-  using assms
+  "distinct (edges_of_vwalk (v # p)) \<Longrightarrow> distinct (edges_of_vwalk p)"
   by (cases p; simp)
 
 lemma tl_vwalk_is_vwalk: "vwalk E p \<Longrightarrow> vwalk E (tl p)"
@@ -191,13 +186,11 @@ lemma vwalk_concat:
   assumes "vwalk E p" "vwalk E q" "q \<noteq> []" "p \<noteq> [] \<Longrightarrow> last p = hd q"
   shows "vwalk E (p @ tl q)"
   using assms
-  by (induction) (simp_all add: tl_vwalk_is_vwalk)
+  by (induction p) (simp_all add: tl_vwalk_is_vwalk)
 
 lemma edges_of_vwalk_append_2:
-  assumes "p' \<noteq> []"
-  shows "edges_of_vwalk (p @ p') = edges_of_vwalk (p @ [hd p']) @ edges_of_vwalk p'"
-  using assms
-  by (induction p rule: induct_list012, auto intro: list.exhaust[of p'])
+  "p' \<noteq> [] \<Longrightarrow> edges_of_vwalk (p @ p') = edges_of_vwalk (p @ [hd p']) @ edges_of_vwalk p'"
+  by (induction p rule: induct_list012) (auto intro: list.exhaust[of p'])
 
 lemma edges_of_vwalk_append: "\<exists>ep. edges_of_vwalk (p @ p') = ep @ edges_of_vwalk p'"
   by (cases "p' = []") (auto dest: edges_of_vwalk_append_2)
@@ -462,6 +455,15 @@ lemma reachable_vwalk:
 lemma reachable_vwalk_iff:
   "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v \<longleftrightarrow> (\<exists>p. hd p = u \<and> last p = v \<and> vwalk E p \<and> p \<noteq> [])"
   by (auto simp: vwalk_reachable reachable_vwalk)
+
+lemma reachable_vwalk_bet_iff:
+  "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v \<longleftrightarrow> (\<exists>p. vwalk_bet E u p v)"
+  by (auto simp: reachable_vwalk_iff vwalk_bet_def)
+
+lemma reachable_vwalk_betD:
+  "vwalk_bet E u p v \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+  using iffD2[OF reachable_vwalk_bet_iff]
+  by force
 
 lemma vwalk_reachable1:
   "vwalk E (u # p @ [v]) \<Longrightarrow> u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
@@ -900,7 +902,5 @@ lemma vwalk_bet_to_distinct_is_distinct_vwalk_bet:
   shows "distinct_vwalk_bet E u (vwalk_bet_to_distinct E p) v"
   using assms
   by (induction rule: vwalk_bet_to_distinct_induct) (auto simp: distinct_vwalk_bet_def)
-
-
 
 end
