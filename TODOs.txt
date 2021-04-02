@@ -8,4 +8,9 @@ For the documents:
  - Add sections to fix the overall generated document
 
 
-
+Final project document stucture (w/o proofs):
+ 1- Findings
+ 2- Summaries
+ 3- Representations
+ 4- Adaptors
+ 
