@@ -14,3 +14,6 @@ Final project document stucture (w/o proofs):
  3- Representations
  4- Adaptors
  
+Proofs:
+ - grep for smt/metis calls and fix them
+ 
