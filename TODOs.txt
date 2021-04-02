@@ -1,0 +1,11 @@
+
+For the documents:
+ - Create one theory file for all findings
+ - Copy Pair_Graph/Findings_Pair_Graph.thy to the new thy file
+ - Recover the tag 'doc' findings thy and copy it to the new thy file
+ - Copy the Adaptors/Summary.thy to the new thy file
+ - Add sections and structure as needed
+ - Add sections to fix the overall generated document
+
+
+
