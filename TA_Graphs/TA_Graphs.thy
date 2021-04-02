@@ -4,7 +4,7 @@
 
 theory TA_Graphs
   imports
-    More_List Stream_More
+    More_List
     "HOL-Library.Rewrite"
 begin
 
@@ -29,11 +29,6 @@ lemma steps_append:
 lemma steps_append':
   "steps xs" if "steps as" "steps bs" "last as = hd bs" "as @ tl bs = xs"
   using steps_append that by blast
-
-coinductive run where
-  "run (x ## y ## xs)" if "E x y" "run (y ## xs)"
-
-lemmas [intro] = run.intros
 
 lemma steps_appendD1:
   "steps xs" if "steps (xs @ ys)" "xs \<noteq> []"
@@ -97,71 +92,6 @@ lemma steps_append_single:
   shows "steps (xs @ [x])"
   using assms(3,1,2) by (induction xs rule: list_nonempty_induct) (auto 4 4 elim: steps.cases)
 
-lemma extend_run:
-  assumes
-    "steps xs" "E (last xs) x" "run (x ## ys)" "xs \<noteq> []"
-  shows "run (xs @- x ## ys)"
-  using assms(4,1-3) by (induction xs rule: list_nonempty_induct) (auto 4 3 elim: steps.cases)
-
-lemma run_cycle:
-  assumes "steps xs" "E (last xs) (hd xs)" "xs \<noteq> []"
-  shows "run (cycle xs)"
-  using assms proof (coinduction arbitrary: xs)
-  case run
-  then show ?case
-    apply (rewrite at \<open>cycle xs\<close> stream.collapse[symmetric])
-    apply (rewrite at \<open>stl (cycle xs)\<close> stream.collapse[symmetric])
-    apply clarsimp
-    apply (erule steps.cases)
-    subgoal for x
-      apply (rule conjI)
-       apply (simp; fail)
-      apply (rule disjI1)
-      apply (inst_existentials xs)
-         apply (simp, metis cycle_Cons[of x "[]", simplified])
-      by auto
-    subgoal for x y xs'
-      apply (rule conjI)
-       apply (simp; fail)
-      apply (rule disjI1)
-      apply (inst_existentials "y # xs' @ [x]")
-      using steps_append_single[of "y # xs'" x]
-         apply (auto elim: steps.cases split: if_split_asm)
-       apply (subst (2) cycle_Cons, simp) (* XXX Automate forward reasoning *)
-      apply (subst cycle_Cons, simp)
-      done
-    done
-qed
-
-lemma run_stl:
-  "run (stl xs)" if "run xs"
-  using that by (auto elim: run.cases)
-
-lemma run_sdrop:
-  "run (sdrop n xs)" if "run xs"
-  using that by (induction n arbitrary: xs) (auto intro: run_stl)
-
-lemma run_reachable':
-  assumes "run (x ## xs)" "E\<^sup>*\<^sup>* x\<^sub>0 x"
-  shows "pred_stream (\<lambda> x. E\<^sup>*\<^sup>* x\<^sub>0 x) xs"
-  using assms by (coinduction arbitrary: x xs) (auto 4 3 elim: run.cases)
-
-lemma run_reachable:
-  assumes "run (x\<^sub>0 ## xs)"
-  shows "pred_stream (\<lambda> x. E\<^sup>*\<^sup>* x\<^sub>0 x) xs"
-  by (rule run_reachable'[OF assms]) blast
-
-lemma run_decomp:
-  assumes "run (xs @- ys)" "xs \<noteq> []"
-  shows "steps xs \<and> run ys \<and> E (last xs) (shd ys)"
-using assms(2,1) proof (induction xs rule: list_nonempty_induct)
-  case (single x)
-  then show ?case by (auto elim: run.cases)
-next
-  case (cons x xs)
-  then show ?case by (cases xs; auto 4 4 elim: run.cases)
-qed
-
 lemma steps_decomp:
   assumes "steps (xs @ ys)" "xs \<noteq> []" "ys \<noteq> []"
   shows "steps xs \<and> steps ys \<and> E (last xs) (hd ys)"
@@ -182,81 +112,6 @@ proof -
     by auto
   then have "steps ((x # xs) @ [y])" by (blast intro: steps_append_single)
   from steps_append[OF \<open>steps (y # ys @ [x])\<close> this] show ?thesis by auto
-qed
-
-lemma run_shift_coinduct[case_names run_shift, consumes 1]:
-  assumes "R w"
-      and "\<And> w. R w \<Longrightarrow> \<exists> u v x y. w = u @- x ## y ## v \<and> steps (u @ [x]) \<and> E x y \<and> R (y ## v)"
-  shows "run w"
-  using assms(2)[OF \<open>R w\<close>] proof (coinduction arbitrary: w)
-  case (run w)
-  then obtain u v x y where "w = u @- x ## y ## v" "steps (u @ [x])" "E x y" "R (y ## v)"
-    by auto
-  then show ?case
-    apply -
-    apply (drule assms(2))
-    apply (cases u)
-     apply force
-    subgoal for z zs
-      apply (cases zs)
-      subgoal
-        apply simp
-        apply safe
-         apply (force elim: steps.cases)
-        subgoal for u' v' x' y'
-          by (inst_existentials "x # u'") (cases u'; auto)
-        done
-      subgoal for a as
-        apply simp
-        apply safe
-         apply (force elim: steps.cases)
-        subgoal for u' v' x' y'
-          apply (inst_existentials "a # as @ x # u'")
-          using steps_append[of "a # as @ [x, y]" "u' @ [x']"]
-          apply simp
-          apply (drule steps_appendI[of "a # as" x, rotated])
-          by (cases u'; force elim: steps.cases)+
-        done
-      done
-    done
-qed
-
-lemma run_flat_coinduct[case_names run_shift, consumes 1]:
-  assumes "R xss"
-    and
-    "\<And> xs ys xss.
-    R (xs ## ys ## xss) \<Longrightarrow> xs \<noteq> [] \<and> steps xs \<and> E (last xs) (hd ys) \<and> R (ys ## xss)"
-  shows "run (flat xss)"
-proof -
-  obtain xs ys xss' where "xss = xs ## ys ## xss'" by (metis stream.collapse)
-  with assms(2)[OF assms(1)[unfolded this]] show ?thesis
-  proof (coinduction arbitrary: xs ys xss' xss rule: run_shift_coinduct)
-    case (run_shift xs ys xss' xss)
-    from run_shift show ?case
-      apply (cases xss')
-      apply clarify
-      apply (drule assms(2))
-      apply (inst_existentials "butlast xs" "tl ys @- flat xss'" "last xs" "hd ys")
-         apply (cases ys)
-          apply (simp; fail)
-      subgoal premises prems for x1 x2 z zs
-      proof (cases "xs = []")
-        case True
-        with prems show ?thesis
-          by auto
-      next
-        case False
-        then have "xs = butlast xs @ [last xs]" by auto
-        then have "butlast xs @- last xs ## tail = xs @- tail" for tail
-          by (metis shift.simps(1,2) shift_append)
-        with prems show ?thesis by simp
-      qed
-        apply (simp; fail)
-       apply assumption
-      subgoal for ws wss
-        by (inst_existentials ys ws wss) (cases ys, auto)
-      done
-  qed
 qed
 
 lemma steps_non_empty[simp]:
@@ -943,8 +798,11 @@ lemma finite_reachable:
 proof -
   have "?S \<subseteq> insert x vertices"
     by (metis insertCI mem_Collect_eq reaches1_verts(2) rtranclpD subsetI)
-  also from finite_graph have "finite \<dots>" ..
-  finally show ?thesis .
+  moreover from finite_graph have "finite (insert x vertices)"
+    ..
+  ultimately show ?thesis 
+    using infinite_super
+    by auto
 qed
 
 end
@@ -965,11 +823,6 @@ lemma invariant_reaches:
   "P b" if "a \<rightarrow>* b" "P a"
   using that by (induction; blast intro: invariant)
 
-lemma invariant_run:
-  assumes run: "run (x ## xs)" and P: "P x"
-  shows "pred_stream P (x ## xs)"
-  using run P by (coinduction arbitrary: x xs) (auto 4 3 elim: invariant run.cases)
-
 text \<open>Every graph invariant induces a subgraph.\<close>
 sublocale Subgraph_Node_Defs where E = E and V = P .
 
@@ -982,7 +835,9 @@ lemma invariant_steps_iff:
   "G'.steps (v # vs) \<longleftrightarrow> steps (v # vs)" if "P v"
   apply (rule iffI)
   subgoal
-    using G'.steps_alt_induct steps_appendI by blast
+    using G'.steps_alt_induct steps_appendI
+          Single
+    by blast
   subgoal premises prems
     using prems \<open>P v\<close> by (induction "v # vs" arbitrary: v vs) (auto intro: subgraph' invariant)
   done
@@ -1012,11 +867,6 @@ lemma invariant_steps:
   "list_all Q as" if "steps (a # as)" "P a"
   using that by (induction "a # as" arbitrary: as a) (auto intro: invariant Q_P)
 
-lemma invariant_run:
-  assumes run: "run (x ## xs)" and P: "P x"
-  shows "pred_stream Q xs"
-  using run P by (coinduction arbitrary: x xs) (auto 4 4 elim: invariant run.cases intro: Q_P)
-
 lemma invariant_reaches1:
   "Q b" if "a \<rightarrow>\<^sup>+ b" "P a"
   using that by (induction; blast intro: invariant Q_P)
@@ -1034,8 +884,6 @@ lemma invariant_steps:
 lemma invariant_reaches:
   "P b" if "s\<^sub>0 \<rightarrow>* b"
   using invariant_reaches[OF that P_s\<^sub>0] .
-
-lemmas invariant_run = invariant_run[OF _ P_s\<^sub>0]
 
 end (* Graph Invariant Start *)
 
