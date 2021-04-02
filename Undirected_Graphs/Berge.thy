@@ -1,6 +1,6 @@
 (*
-  Author: Mohammad Abdulaziz, TUM.
-  Author: Martin Molzer, TUM. Mainly improved the automation.
+  Author: Mohammad Abdulaziz, TUM
+  Author: Martin Molzer, TUM improved the automation
 *)
 
 theory Berge
@@ -168,11 +168,9 @@ proof-
 qed
 
 lemma distinct_edges_of_vpath:
-  assumes "distinct p"
-  shows "distinct (edges_of_path p)"
-  using assms
-  apply (induction p rule: edges_of_path.induct, simp_all)
-  using v_in_edge_in_path by fastforce
+  "distinct p \<Longrightarrow> distinct (edges_of_path p)"
+  using v_in_edge_in_path
+  by (induction p rule: edges_of_path.induct) fastforce+
 
 lemma distinct_edges_of_paths_cons:
   assumes "distinct (edges_of_path (v # p))"
