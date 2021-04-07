@@ -49,16 +49,6 @@ thm steps_append steps_append2 steps_appendD1 steps_appendD2 steps_decomp
 
 text \<open>No definition of cycles. It's just @{term "x \<rightarrow>\<^sup>+ x"}. That includes self-loops.\<close>
 
-
-subsection \<open>Infinite Paths\<close>
-
-text "Defined by predicate @{term run}."
-
-thm extend_run run_decomp \<comment> \<open>combining paths and runs and splitting of a prefix\<close>
-thm run_cycle \<comment> \<open>Constructing a run from a cycle\<close>
-thm run_shift_coinduct run_flat_coinduct \<comment> \<open>Coinduction principles on runs\<close>
-
-
 subsection \<open>Reachability and paths\<close>
 
 thm reaches_steps_iff reaches1_steps_iff reaches_steps_iff2

@@ -7,7 +7,7 @@ section \<open>Trees\<close>
 locale tree = graph T for T +
   assumes unique_trail: "\<lbrakk> u \<in> vertices T; v \<in> vertices T \<rbrakk> \<Longrightarrow> \<exists>!p. trail T u p v"
 
-theorem (in tree)
+theorem (in tree) no_closed_trail:
   shows "\<nexists>v c. closed_trail T v c"
 proof (rule ccontr)
   assume "\<not> (\<nexists>v c. closed_trail T v c)"

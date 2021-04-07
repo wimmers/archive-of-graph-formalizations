@@ -1,7 +1,7 @@
 theory Digraph_Summary
   imports Graph_Theory.Graph_Theory 
     "../Graph_Theory/Directed_Tree"
-  "../TA_Graphs/TA_Graph_Library_Adaptor"
+    "../Adaptors/TA_Graph_Library_Adaptor"
 begin
 
 text \<open>This theory collects basic concepts about directed graphs in Noschinski's digraph library.\<close>
@@ -114,7 +114,7 @@ thm subgraph_apath_imp_apath[OF _ subgraph_del_arc]
 subsection \<open>Graph properties\<close>
 text \<open>aka cycle free aka DAG. Note that this definition should be renamed to something more
   appropriate such as dag since there is no reasonable definition of forests in a general digraph.
-  Forests and trees should only be defined in @{locale sym_digraph}}.\<close>
+  Forests and trees should only be defined in @{locale sym_digraph}.\<close>
 thm forest_def
 
 text \<open>Every DAG has a topological numbering:\<close>

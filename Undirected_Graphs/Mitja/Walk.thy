@@ -7,8 +7,8 @@ begin
 section \<open>Walks\<close>
 
 text \<open>
-A walk is an alternating sequence v_0, e_1, v_2, ..., e_k, v_k of vertices v_i and edges e_i
-such that the endpoints of e_i are v_{i-1} and v_i for every i = 1, ..., k.
+A walk is an alternating sequence $v_0, e_1, v_2, ..., e_k, v_k$ of vertices $v_i$ and edges $e_i$
+such that the endpoints of $e_i$ are $v_{i-1}$ and $v_i$ for every i = 1, ..., k.
 We represent a walk by the sequence of its vertices.
 \<close>
 

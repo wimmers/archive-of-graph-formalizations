@@ -1,3 +1,5 @@
+(*Author: Simon Wimmer*)
+
 section \<open>Transferring Theorems Between Graph Libraries\<close>
 theory TA_Graph_Library_Adaptor
   imports TA_Graphs "../Graph_Theory/More_Graph_Theory"

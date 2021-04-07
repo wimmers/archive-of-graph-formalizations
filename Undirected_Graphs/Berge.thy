@@ -1,6 +1,6 @@
 (*
-  Author: Mohammad Abdulaziz, TUM.
-  Author: Martin Molzer, TUM. Mainly improved the automation.
+  Author: Mohammad Abdulaziz, TUM
+  Author: Martin Molzer, TUM improved the automation
 *)
 
 theory Berge
@@ -123,7 +123,7 @@ lemma path_vertex_has_edge:
 proof-
   obtain i where idef: "v = p ! i" "i < length p" by (metis assms(2) in_set_conv_nth)
   have eoplength': "Suc (length (edges_of_path p)) = length p"
-    by (metis Suc_diff_1 assms(2) edges_of_path_length emptyE length_greater_0_conv list.set(1))
+    using assms(1) by (auto simp: edges_of_path_length)
   hence eoplength: "length (edges_of_path p) \<ge> 1" using assms(1) by simp
 
   from idef consider (nil) "i = 0" | (gt) "i > 0" "Suc i < length p" | (last) "Suc i = length p"
@@ -168,11 +168,9 @@ proof-
 qed
 
 lemma distinct_edges_of_vpath:
-  assumes "distinct p"
-  shows "distinct (edges_of_path p)"
-  using assms
-  apply (induction p rule: edges_of_path.induct, simp_all)
-  using v_in_edge_in_path by fastforce
+  "distinct p \<Longrightarrow> distinct (edges_of_path p)"
+  using v_in_edge_in_path
+  by (induction p rule: edges_of_path.induct) fastforce+
 
 lemma distinct_edges_of_paths_cons:
   assumes "distinct (edges_of_path (v # p))"

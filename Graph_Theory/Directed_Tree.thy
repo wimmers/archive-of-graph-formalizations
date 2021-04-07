@@ -1,3 +1,5 @@
+(* Author: Lukas Stevens *)
+
 theory Directed_Tree
   imports "Graph_Theory.Graph_Theory" More_Graph_Theory
 begin
