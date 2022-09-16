@@ -132,9 +132,8 @@ lemma path_vertex_has_edge:
   obtains e where "e \<in> set (edges_of_path p)" "v \<in> e"
 proof-
   have "\<exists>e \<in> set (edges_of_path p). v \<in> e"
-    using assms
-    by (induction p rule: edges_of_path.induct)
-       (simp; metis Suc_leI empty_iff length_greater_0_conv list.set(1))+
+    using assms Suc_le_eq 
+    by (induction p rule: edges_of_path.induct) fastforce+
   thus ?thesis
     using that
     by rule
@@ -161,7 +160,7 @@ proof-
     by blast
   thus ?thesis
     using assms
-    by (simp, metis insert_commute v_in_edge_in_path)
+    by (force simp add: insert_commute intro: v_in_edge_in_path)
 qed
 
 lemma distinct_edges_of_vpath:
@@ -199,8 +198,6 @@ proof(induction p rule: induct_list012)
   obtain a p's where "p' = a # p's" using assms list.exhaust_sel by blast
   thus ?case by simp
 qed simp_all
-
-find_theorems butlast last
 
 lemma edges_of_path_append_3:
   assumes "p \<noteq> []"
@@ -262,10 +259,16 @@ proof(induction "length p" arbitrary: v p)
   qed auto
 qed simp
 
+find_theorems edges_of_path "(@)"
+
 lemma edges_of_path_append_subset:
   "set (edges_of_path p') \<subseteq> set (edges_of_path (p @ p'))"
-  using edges_of_path_append
-  by (metis eq_iff le_supE set_append)
+proof(cases p')
+  case (Cons a list)
+  then show ?thesis
+    apply(subst edges_of_path_append_2)
+    by auto
+qed auto
 
 lemma path_edges_subset:
   assumes "path E p"
@@ -475,13 +478,11 @@ lemma reachable_trans:
 
 lemma reachable_sym:
   "reachable E u v \<longleftrightarrow> reachable E v u"
-  apply(simp add: reachable_def)
-  by (meson walk_symmetric)
+  by(auto simp add: reachable_def dest: walk_symmetric)
 
 lemma reachable_refl:
   "u \<in> Vs E \<Longrightarrow> reachable E u u"
-  apply(simp add: reachable_def)
-  by (metis walk_reflexive)
+  by(auto simp add: reachable_def dest: walk_reflexive)
 
 definition connected_component where
   "connected_component E v = {v'. v' = v \<or> reachable E v v'}"
@@ -506,7 +507,9 @@ lemma in_connected_component_has_walk:
   assumes "v \<in> connected_component E w" "w \<in> Vs E"
   obtains p where "walk_betw E w p v"
 proof(cases "v = w")
-  case True thus ?thesis using that assms(2) walk_reflexive by metis
+  case True thus ?thesis
+   using that assms(2)
+   by (auto dest: walk_reflexive )
 next
   case False
   hence "reachable E w v"
@@ -645,7 +648,8 @@ proof-
       using assms
       by auto
   qed
-  moreover have "x \<in> Vs E" by (meson assms edges_are_Vs)
+  moreover have "x \<in> Vs E" using assms
+    by (auto dest: edges_are_Vs)
   ultimately show ?thesis
     unfolding connected_components_def
     using in_own_connected_component
@@ -653,10 +657,8 @@ proof-
 qed
 
 lemma edge_in_unique_component:
-  assumes "{x,y} \<in> E"
-  shows "\<exists>!C. C \<in> connected_components E \<and> {x,y} \<subseteq> C"
-  using edge_in_component connected_components_closed'
-  by (metis assms insert_subset)
+  "{x,y} \<in> E \<Longrightarrow> \<exists>!C. C \<in> connected_components E \<and> {x,y} \<subseteq> C"
+  by(force dest: connected_components_closed' edge_in_component )
 
 lemma connected_component_set:
   "\<lbrakk>u \<in> Vs E; \<And>x. x \<in> C \<Longrightarrow> reachable E u x; \<And>x. reachable E u x \<Longrightarrow> x \<in> C\<rbrakk> \<Longrightarrow> connected_component E u = C"
@@ -676,7 +678,9 @@ lemma component_edges_disj_edges:
 proof(intro equals0I)
   fix x assume "x \<in> v \<inter> w"
   hence "x \<in> C" "x \<in> C'" using assms(4, 5) unfolding component_edges_def by blast+
-  thus False by (metis assms(1-3) connected_components_closed')
+  thus False
+    using assms(1-3)
+    by(auto dest: connected_components_closed')
 qed
 
 lemma component_edges_disj:
@@ -684,7 +688,12 @@ lemma component_edges_disj:
   shows "component_edges E C \<inter> component_edges E C' = {}"
 proof(intro equals0I, goal_cases)
   case (1 y)
-  hence "y = {}" using assms component_edges_disj_edges by (metis IntD1 IntD2 Int_absorb)
+  hence "y = {}"
+    apply(subst Int_absorb[symmetric])
+    apply(intro component_edges_disj_edges)
+    using assms  
+    by auto
+
   thus False using 1 unfolding component_edges_def by blast
 qed
 
@@ -739,9 +748,7 @@ text\<open>Since one of the matchings is bigger, there must be one edge equivale
 
 lemma lt_sum:
   "(\<Sum>x\<in>s. g x) < (\<Sum>x\<in>s. f x) \<Longrightarrow> \<exists>(x::'a ) \<in> s. ((g::'a \<Rightarrow> nat) x < f x)"
-  apply (auto simp add: not_le[symmetric])
-  using sum_mono
-  by metis
+  by (auto simp add: not_le[symmetric] intro: sum_mono)
 
 lemma Union_lt:
   assumes finite: "finite S" "finite t" "finite u" and
@@ -813,8 +820,8 @@ proof
 next
   assume "even (length l)"
   thus "length (filter P1 l) = length (filter P2 l)"
-    using assms alternating_length_balanced
-    by (metis (no_types, lifting) alternating_length even_add odd_one)
+    using alternating_length_balanced[OF assms] alternating_length[OF assms(2)]
+    by auto
 qed
 
 lemma alternating_eq_iff_odd:
@@ -902,12 +909,10 @@ lemma alternating_list_eq_even:
 (*TODO fix metis *)
 
 lemma alternating_list_eq_last':
-  assumes "length (filter P1 l) = length (filter P2 l)"
-          "\<forall>x\<in>set l. P1 x \<longleftrightarrow> \<not> P2 x"
-          "l \<noteq> []"
-          "P2 (last l)"
-        shows "\<not> alt_list P2 P1 l"
-  by (metis alternating_eq_iff_even alternating_list_even_last assms last_in_set)
+  "\<lbrakk>length (filter P1 l) = length (filter P2 l); \<forall>x\<in>set l. P1 x \<longleftrightarrow> \<not> P2 x; l \<noteq> []; P2 (last l)\<rbrakk>
+    \<Longrightarrow> \<not> alt_list P2 P1 l"
+  using alternating_eq_iff_even alternating_list_even_last last_in_set
+  by fastforce
 
 lemma gt_zero:"x < (y::nat) \<Longrightarrow> 0 < y"
   by auto
@@ -929,8 +934,7 @@ lemma alt_list_not_commute:
           "l \<noteq> []"
     shows "\<not> alt_list P2 P1 l"
   using assms
-  apply(cases "l = []"; simp)
-  by (metis alt_list.cases list.inject list.set_intros(1))
+  by(auto simp add: neq_Nil_conv alt_list_step)
 
 lemma alternating_list_gt_or:
   assumes "length (filter P1 l) > length (filter P2 l)"
@@ -965,27 +969,26 @@ lemma alt_list_append_1:
   using assms
   by (induction l1 rule: induct_list012)
      (simp_all add: alt_list_empty alt_list_step)
-(*TODO: FIX METIS*)
+
 lemma alt_list_append_2:
   assumes "alt_list P1 P2 l1" "alt_list P2 P1 l2" "odd (length l1)"
   shows "alt_list P1 P2 (l1 @ l2)"
   using assms
 proof (induction l1 rule: induct_list012)
   case (sucsuc x y zs)
-  hence "zs \<noteq> []" by force
-  hence "alt_list P1 P2 (zs @ l2)"
-    by (metis "sucsuc.IH"(1) "sucsuc.prems" alt_list_step even_Suc_Suc_iff length_Cons)
-  thus ?case by (metis "sucsuc.prems"(1) alt_list_step append_Cons)
+  thus ?case
+    by (auto simp: alt_list_step)
 qed (simp_all add: alt_list_step)
-(*TODO: FIX METIS*)
+
+
 lemma alt_list_append_3:
   assumes "alt_list P1 P2 l1" "alt_list P1 P2 l2" "even (length l1)"
   shows "alt_list P1 P2 (l1 @ l2)"
   using assms
 proof (induction l1 rule: induct_list012)
   case (sucsuc x y zs)
-  hence "alt_list P1 P2 (zs @ l2)" by (simp add: alt_list_step)
-  thus ?case by (metis "sucsuc.prems"(1) alt_list_step append_Cons)
+  thus ?case
+    by (auto simp: alt_list_step)
 qed (simp_all add: alt_list_step)
 
 lemma alt_list_split_1:
@@ -1030,22 +1033,23 @@ proof(induction rule: induct_alt_list012)
     using alt_list_append_3 sucsuc.prems by fastforce
   thus ?case by simp
 qed (simp_all add: alt_list_empty)
-(*TODO: FIX METIS*)
+
 lemma alt_list_rev:
   assumes "alt_list P1 P2 l" "odd (length l)"
   shows "alt_list P1 P2 (rev l)" 
   using assms
 proof-
   obtain x zs where "l = x # zs" using assms(2) by (cases l, fastforce+)
-  hence "alt_list P1 P2 (rev zs)" using alt_list_rev_even
-    by (metis alt_list_step assms(1) assms(2) even_Suc length_Cons)
+  hence "alt_list P1 P2 (rev zs)"using assms
+    by (auto intro!: alt_list_rev_even simp: alt_list_step) 
   moreover have "alt_list P1 P2 [x]"
-    by (metis \<open>l = x # zs\<close> alt_list_empty alt_list_step assms(1))
+    using assms(1)[simplified \<open>l = x # zs\<close>]
+    by (auto simp: alt_list_empty alt_list_step )
   ultimately show ?thesis using alt_list_append_3 \<open>l = x # zs\<close> assms(2) by fastforce
 qed
 
 subsection\<open>Every connected component can be linearised in a path.\<close>
-(*TODO: FIX METIS*)
+
 lemma path_subset_conn_comp:
   assumes "path E p"
   shows "set p \<subseteq> connected_component E (hd p)"
@@ -1058,20 +1062,24 @@ next
   then show ?case using in_own_connected_component by simp
 next
   case (path2 v v' vs)
-  hence "path E [v', v]" by (metis edges_are_Vs insert_commute path1 path_2)
+  hence "walk_betw E v' [v',v] v"
+    by (simp add: edges_are_walks insert_commute)
   hence "v \<in> connected_component E v'"
-    by (metis connected_components_closed' edge_in_component insert_subset path2.hyps(1))
+    by (auto dest:has_path_in_connected_component) 
   moreover hence "connected_component E v = connected_component E v'"
     by (simp add: connected_components_member_eq)
   ultimately show ?case using path2.IH by fastforce
 qed
 
+lemma walk_betw_subset_conn_comp:
+  "walk_betw E u p v \<Longrightarrow> set p \<subseteq> connected_component E u"
+  using path_subset_conn_comp
+  by (auto simp: walk_betw_def)
+
 lemma path_in_connected_component:
-  assumes "path E p" "hd p \<in> connected_component E x"
-  shows "set p \<subseteq> connected_component E x"
-  using assms connected_components_member_eq path_subset_conn_comp
-  by metis
-(*TODO: FIX METIS*)
+  "\<lbrakk>path E p; hd p \<in> connected_component E x\<rbrakk> \<Longrightarrow> set p \<subseteq> connected_component E x"
+  by (fastforce dest: path_subset_conn_comp simp: connected_components_member_eq)
+
 lemma component_has_path:
   assumes "finite C'" "C' \<subseteq> C" "C \<in> connected_components E"
   shows "\<exists>p. path E p \<and> C' \<subseteq> (set p) \<and> (set p) \<subseteq> C"
@@ -1082,7 +1090,7 @@ proof(induction C')
 next
   case ass: (insert x F)
   then obtain p where p: "path E p" "F \<subseteq> set p" "set p \<subseteq> C"
-    by (meson insert_subset)
+    by auto
   have "x \<in> C" using ass.prems(1) by blast
   hence C_def: "C = connected_component E x"
     by (simp add: assms(3) connected_components_closed')
@@ -1098,13 +1106,17 @@ next
     hence walkhp: "walk_betw E h p (last p)" using p(1) walk_betw_def by fastforce
 
     have "h \<in> C" using \<open>p = h # t\<close> p(3) by fastforce
-    then obtain q where walkxh: "walk_betw E x q h"
-      by (metis C_def \<open>x \<in> C\<close> assms(3) connected_comp_verts_in_verts in_connected_component_has_walk)
-    hence walkxp: "walk_betw E x (q @ tl p) (last p)" by (meson walk_transitive walkhp)
-
-    hence "path E (q @ tl p)"
+    moreover have "x \<in> Vs E"
+      using \<open>x \<in> C\<close> assms(3) connected_component_subs_Vs
+      by auto
+    ultimately obtain q where walkxh: "walk_betw E x q h"
+      by (auto simp: C_def elim: in_connected_component_has_walk)
+    hence walkxp: "walk_betw E x (q @ tl p) (last p)"
+      by (simp add: walk_transitive walkhp)
+    moreover hence "set (q @ tl p) \<subseteq> C"
+      by(auto simp: C_def dest!: walk_betw_subset_conn_comp)
+    moreover from walkxp have "path E (q @ tl p)"
       by (fastforce dest: walk_between_nonempty_pathD)
-    moreover from walkxp have "set (q @ tl p) \<subseteq> C" by (metis C_def path_subset_conn_comp walk_betw_def)
     moreover {
       from walkxh have "last q = h" "hd q = x" by (fastforce dest: walk_between_nonempty_pathD)+
       then have "insert x F \<subseteq> set (q @ tl p)" using \<open>p = h # t\<close> walkxh p(2) by fastforce
@@ -1114,10 +1126,9 @@ next
 qed
 
 lemma component_has_path':
-  assumes "finite C" "C \<in> connected_components E"
-  shows "\<exists>p. path E p \<and> C = (set p)"
-  using assms component_has_path
-  by (metis subset_antisym subset_refl)
+  "\<lbrakk>finite C; C \<in> connected_components E\<rbrakk> \<Longrightarrow> \<exists>p. path E p \<and> C = (set p)"
+  using component_has_path
+  by fastforce
 
 subsection\<open>Every connected component can be linearised in a simple path\<close>
 
@@ -1129,9 +1140,10 @@ definition card' :: "'a set \<Rightarrow> enat" where
 
 lemma card'_finite: "finite A \<Longrightarrow> card' A = card A"
   unfolding card'_def by simp
-(*TODO: FIX METIS*)
+
 lemma card'_mono: "A \<subseteq> B \<Longrightarrow> card' A \<le> card' B"
-  by (metis card'_def card_mono enat_ord_code(3) enat_ord_simps(1) finite_subset)
+  using finite_subset
+  by (auto simp add: card'_def intro: card_mono)
 
 lemma card'_empty[iff]: "(card' A = 0) \<longleftrightarrow> A = {}"
   unfolding card'_def using enat_0_iff(2) by auto
@@ -1162,8 +1174,9 @@ lemma card'_finite_enat[iff]: "(card' A = enat m) \<longleftrightarrow> (finite 
 lemma card'_1_singletonE:
   assumes "card' A = 1"
   obtains x where "A = {x}"
-  using assms unfolding card'_def
-  by (metis card_1_singletonE enat_1_iff(1) infinity_ne_i1)
+  using assms
+  unfolding card'_def
+  by (fastforce elim!: card_1_singletonE dest: iffD1[OF enat_1_iff(1)] split: if_splits)
 
 lemma card'_insert[simp]: "card' (insert a A) = (if a \<in> A then id else eSuc) (card' A)"
   using card_insert_if finite_insert
@@ -1181,10 +1194,13 @@ lemma degree_def2: "degree E v \<equiv> card' {e \<in> E. v \<in> e}"
 
 lemma degree_Vs: "degree E v \<ge> 1" if "v \<in> Vs E"
 proof-
-  obtain e where "e \<in> E" "v \<in> e" by (metis UnionE Vs_def \<open>v \<in> Vs E\<close>)
+  obtain e where "e \<in> E" "v \<in> e"
+    using \<open>v \<in> Vs E\<close>
+    by (auto simp: Vs_def)
   hence "{e} \<subseteq> {e \<in> E. v \<in> e}" by simp
   moreover have "card' {e} = 1" by (simp add: one_enat_def)
-  ultimately show ?thesis unfolding degree_def2 by (metis card'_mono)
+  ultimately show ?thesis
+    by(fastforce dest!: card'_mono simp: degree_def2)
 qed
 
 lemma degree_not_Vs: "v \<notin> Vs E \<Longrightarrow> degree E v = 0"
@@ -1205,10 +1221,8 @@ lemma degree_card_all:
   by (simp add: card'_finite inf.absorb2 subsetI)
 
 lemma subset_edges_less_degree:
-  assumes "E' \<subseteq> E"
-  shows "degree E' v \<le> degree E v"
-  unfolding degree_def using card'_mono
-  by (metis Int_mono assms subset_refl)
+  "E' \<subseteq> E \<Longrightarrow> degree E' v \<le> degree E v"
+  by (auto intro: card'_mono simp: degree_def)
 
 lemma less_edges_less_degree:
   shows "degree (E - E') v \<le> degree E v"
@@ -1216,17 +1230,15 @@ lemma less_edges_less_degree:
      (simp add: subset_edges_less_degree)
 
 lemma in_edges_of_path':
-  assumes "v \<in> set p" "length p \<ge> 2"
-  shows "v \<in> Vs (set (edges_of_path p))"
-  unfolding Vs_def using assms
-  by (meson Union_iff path_vertex_has_edge)
+  "\<lbrakk> v \<in> set p; length p \<ge> 2\<rbrakk> \<Longrightarrow> v \<in> Vs (set (edges_of_path p))"
+  by(auto dest: path_vertex_has_edge simp: Vs_def)
 
 lemma in_edges_of_path:
   assumes "v \<in> set p" "v \<noteq> hd p"
   shows "v \<in> Vs (set (edges_of_path p))"
 proof-
-  have "length p \<ge> 2" using assms(1) assms(2) hd_conv_nth in_set_conv_nth length_pos_if_in_set
-    by (metis One_nat_def Suc_1 Suc_leI Suc_lessI length_greater_0_conv less_Suc0)
+  have "length p \<ge> 2" using assms 
+    by(cases p, auto dest!: length_pos_if_in_set simp: neq_Nil_conv)
   thus ?thesis by (simp add: assms(1) in_edges_of_path')
 qed
 
@@ -1235,7 +1247,7 @@ lemma degree_edges_of_path_hd:
   shows "degree (set (edges_of_path p)) (hd p) = 1"
 proof-
   obtain h nxt rest where p_def: "p = h # nxt # rest" using assms(2)
-    by (metis One_nat_def Suc_1 Suc_le_length_iff)
+    by (auto simp: Suc_le_length_iff eval_nat_numeral)
   have calc: "{e. hd (h # nxt # rest) \<in> e} \<inter> set (edges_of_path (h # nxt # rest)) = {{h, nxt}}"
   proof(standard; standard)
     fix e assume "e \<in> {e. hd (h # nxt # rest) \<in> e} \<inter> set (edges_of_path (h # nxt # rest))"
@@ -1254,8 +1266,8 @@ proof-
   moreover have "length (rev p) \<ge> 2" using assms(2) by simp
   ultimately have "degree (set (edges_of_path (rev p))) (hd (rev p)) = 1"
     using degree_edges_of_path_hd by blast
-  then show ?thesis using edges_of_path_rev set_rev hd_rev \<open>2 \<le> length (rev p)\<close>
-    by (metis length_0_conv length_rev not_numeral_le_zero)
+  then show ?thesis
+    by(simp add: edges_of_path_rev[symmetric] hd_rev)
 qed
 
 lemma degree_edges_of_path_ge_2:
@@ -1381,9 +1393,7 @@ next
 next
   case (path2 v v' vs)
   then show ?case
-    apply (auto simp: vs_member)
-    apply blast
-    by (metis insert_iff)
+    by (simp add: vs_member) blast+
 qed
 
 lemma welk_betw_unionE[case_names nil sing1 sing2 in_e in_E]:
@@ -1503,7 +1513,7 @@ next
       apply simp
       using walk_between_nonempty_pathD(4)[OF \<open>walk_betw {{w, x}} u [u, v3] v3\<close>]
             walk_betw_singletonD[OF \<open>walk_betw {{w, x}} u [u, v3] v3\<close>]
-      by (auto; metis walk_reflexive)
+      by (auto dest: walk_reflexive)
   next
     case (5 p' v3)
     then show ?case
@@ -1551,14 +1561,14 @@ next
     then show ?case
       (*TODO: Lukas*)
       using walk_betw_singletonD[OF \<open>walk_betw {{w, x}} u [u, v3] v3\<close>]
-      by (simp, meson walk_endpoints(1) walk_reflexive)
+      by (auto dest: walk_endpoints(1) walk_reflexive)
   next
     case (5 p' v3)
     then show ?case
      (*TODO: Lukas*)
       using walk_transitive[OF \<open>walk_betw E u [u, v3] v3\<close>] walk_endpoints(2)
       by (metis list.sel(3))
-  qed (simp, meson walk_reflexive)+
+  qed (auto dest: walk_reflexive)+
 qed
 
 lemma reachability_split_2:
@@ -2697,7 +2707,7 @@ proof(cases "v = hd p \<or> v = last p")
   moreover have "2 \<le> degree (set (edges_of_path (last p # p))) a"
   proof-
     have "last p \<noteq> a'" using assms(1) p by auto
-    hence "{last p, a} \<noteq> {a, a'}" by (metis doubleton_eq_iff)
+    hence "{last p, a} \<noteq> {a, a'}" by (auto simp: doubleton_eq_iff)
     hence "2 \<le> degree {{last p, a}, {a, a'}} a"
       by (simp add: degree_insert eval_enat_numeral one_eSuc)
     moreover have "{{last p, a}, {a, a'}} \<subseteq> set (edges_of_path (last p # p))"
@@ -2832,8 +2842,8 @@ next
               by auto
           qed
           moreover have horrid_eq_expr: "\<forall>x\<in>set (edges_of_path vs'). (x \<in> M') = (x \<notin> M)"
-            unfolding vs'_def
-            by (metis "*" UnE component_edges_subset contra_subsetD sym_diff_subset symm_diff_mutex vs'_def)
+            using sym_diff_subset symm_diff_mutex component_edges_subset[where E = "M \<oplus> M'"]
+            by (fastforce simp: *)
           moreover have "alt_list (\<lambda>e. e \<in> M') (\<lambda>e. e \<in> M) (edges_of_path vs')"
           proof-
             have "path (M \<oplus> M') (last vs # vs)"
