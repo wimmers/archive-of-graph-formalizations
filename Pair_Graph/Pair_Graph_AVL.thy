@@ -38,18 +38,19 @@ where empty = AVL_Set_Code.empty and insert = insert and delete = AVL_Set_Code.d
 
 find_theorems name: S_C
 interpretation G: Adj_Map_Specs
-  where adj_empty=AVL_Set_Code.empty and adj_update=update and adj_delete = AVL_Map.delete and
-        adj_lookup =lookup and adj_inv = M.invar  and neighb_empty = AVL_Set_Code.empty and 
-        neighb_insert = insert and neighb_delete = AVL_Set_Code.delete and neighb_isin = isin and 
-        neighb_set = "set o inorder" and neighb_inv = S.invar and neighb_sel = avl_sel and
+  where empty=AVL_Set_Code.empty and update=update and delete = AVL_Map.delete and
+        lookup =lookup and adj_inv = M.invar  and neighb_empty = AVL_Set_Code.empty and 
+        neighb_insert = insert and neighb_delete = AVL_Set_Code.delete and isin = isin and 
+        t_set = "set o inorder" and neighb_inv = S.invar and sel = avl_sel and
         adj_foreach = avl_fold_keys
   apply(simp add: Adj_Map_Specs_def)
   apply(intro conjI)
   subgoal using M.Map_axioms .
   subgoal using S_C.Set_Choose_axioms .
-  subgoal apply unfold_locales
+  subgoal 
+  apply unfold_locales
     apply(simp add: M.invar_def)
-    by (smt (verit, best) avl_fold_works avl_map_dom_inorder)
+    by (metis avl_fold_works avl_map_dom_inorder)
   done
 
 end

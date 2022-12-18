@@ -24,7 +24,7 @@ lemma dVs_empty[simp]: "dVs {} = {}"
 lemma dVs_empty_iff[simp]: "dVs E = {} \<longleftrightarrow> E = {}"
   unfolding dVs_def by auto
 
-lemma dVsI:
+lemma dVsI[intro]:
   assumes "(a, v) \<in> dG" shows "a \<in> dVs dG" and "v \<in> dVs dG"
   using assms unfolding dVs_def by auto
 
@@ -82,7 +82,7 @@ lemma reachable_trans[trans]:
 
 lemma reachable_induct[consumes 1, case_names base step]:
   assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
-    and cases: "u \<in> dVs E \<Longrightarrow> P u"
+    and cases: "\<lbrakk>u \<in> dVs E\<rbrakk> \<Longrightarrow> P u"
       "\<And>x y. \<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> x; x \<rightarrow>\<^bsub>E\<^esub> y; P x\<rbrakk> \<Longrightarrow> P y"
   shows "P v"
   using assms unfolding reachable_def by (rule rtrancl_on_induct)
@@ -123,5 +123,11 @@ lemma reachable_neq_reachable1[intro]:
 lemmas reachable_neq_reachable1E[elim] = reachable_neq_reachable1[elim_format]
 
 lemma arc_implies_dominates: "e \<in> E \<Longrightarrow> fst e \<rightarrow>\<^bsub>E\<^esub> snd e" by auto
+
+definition "neighbourhood G u = {(u,v). (u,v) \<in> G}"
+
+definition "sources G = {u | u v . (u,v) \<in> G}"
+
+definition "sinks G = {v | u v . (u,v) \<in> G}"
 
 end

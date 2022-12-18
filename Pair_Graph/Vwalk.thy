@@ -903,4 +903,13 @@ lemma vwalk_bet_to_distinct_is_distinct_vwalk_bet:
   using assms
   by (induction rule: vwalk_bet_to_distinct_induct) (auto simp: distinct_vwalk_bet_def)
 
+lemma vwalk_betE[elim]:
+  assumes "vwalk_bet E u p v"
+  assumes singleton: "\<lbrakk> v\<in> dVs E; u = v\<rbrakk> \<Longrightarrow> P"
+  assumes
+    step: "\<And>p' x. \<lbrakk> p = u#x#p'; (u,x)\<in>E; vwalk_bet E x (x#p') v\<rbrakk> \<Longrightarrow> P"
+  shows "P"
+  using assms
+  by (induction rule: induct_vwalk_bet) auto
+
 end
