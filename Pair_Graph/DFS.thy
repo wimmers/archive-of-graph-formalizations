@@ -2,16 +2,6 @@ theory DFS
   imports Pair_Graph_Specs
 begin
 
-datatype 'a tree = Leaf | Node "'a tree" 'a "'a tree"
-
-fun fold_tree where
-"fold_tree f Leaf a = a"
-| "fold_tree f (Node l x r) a = fold_tree f r (fold_tree f l a)" 
-
-thm fold_tree.induct
-
-term Suc
-
 datatype return = Reachable | NotReachable
 
 record ('ver, 'neighb) DFS_state = stack:: "'ver list" visited:: "'neighb" return:: return
@@ -25,14 +15,16 @@ locale DFS =
 
 for lookup :: "'adj \<Rightarrow> 'a \<Rightarrow> 'neighb option" +
 
-fixes t::"'a"
+fixes G::"'adj" and t::"'a"
 assumes finite_neighbourhoods:
-        "finite (t_set N)"
-
+          "finite (t_set N)" and
+        graph_inv[simp,intro]:
+          "Graph.graph_inv G"
 begin
 
+abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G"
 
-notation "Graph.neighbourhood" ("\<N>\<^sub>G _" 100)
+notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
 
 notation "inter" (infixl "\<inter>\<^sub>G" 100)
 
@@ -211,7 +203,7 @@ lemma DFS_induct:
   by (auto simp add: DFS_call_1_conds_def DFS_upd1_def DFS_call_2_conds_def DFS_upd2_def
            split: list.splits option.splits if_splits)
 
-definition "invar_1 dfs_state = neighb_inv (visited dfs_state)"
+definition "invar_1 dfs_state \<equiv> neighb_inv (visited dfs_state)"
 
 term DFS.invar_1
 
@@ -249,12 +241,12 @@ proof(induction rule: DFS_induct[OF assms(1)])
     by (auto intro!: IH(2-4) invar_holds_intros  simp: DFS_simps[OF IH(1)])
 qed
 
-definition "invar_2 dfs_state = (Vwalk.vwalk Graph.digraph_abs (rev (stack dfs_state)))"
+definition "invar_2 dfs_state = (Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)))"
 
-lemma invar_2_props[dest!]: "invar_2 dfs_state \<Longrightarrow> (Vwalk.vwalk Graph.digraph_abs (rev (stack dfs_state)))"
+lemma invar_2_props[dest!]: "invar_2 dfs_state \<Longrightarrow> (Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)))"
   by (auto simp: invar_2_def)
 
-lemma invar_2_intro[invar_props_intros]: "Vwalk.vwalk Graph.digraph_abs (rev (stack dfs_state)) \<Longrightarrow> invar_2 dfs_state"
+lemma invar_2_intro[invar_props_intros]: "Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)) \<Longrightarrow> invar_2 dfs_state"
   by (auto simp: invar_2_def)
 
 lemma invar_2_holds_1[invar_holds_intros]:
@@ -263,6 +255,7 @@ lemma invar_2_holds_1[invar_holds_intros]:
     using assms
     by (fastforce simp: DFS_upd1_def elim!: call_cond_elims
                 intro!: invar_props_intros Vwalk.vwalk_append2)
+
 
 lemma invar_2_holds_2[invar_holds_intros]: "\<lbrakk>DFS_call_2_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (DFS_upd2 dfs_state)"
   by (auto simp: DFS_upd2_def dest!: append_vwalk_pref intro!: invar_props_intros elim: call_cond_elims)
@@ -286,12 +279,12 @@ qed
 
 \<comment> \<open>Example of funciton package bad ind ppcl?\<close>
 
-definition "invar_3 dfs_state = (\<forall>v \<in> t_set (visited dfs_state). (\<nexists>p. Vwalk.vwalk_bet Graph.digraph_abs v p t) )"
+definition "invar_3 dfs_state = (\<forall>v \<in> t_set (visited dfs_state). (\<nexists>p. Vwalk.vwalk_bet (Graph.digraph_abs G) v p t) )"
 
-lemma invar_3_props[elim!]: "invar_3 dfs_state \<Longrightarrow> (\<lbrakk>\<And>v p. v \<in> t_set (visited dfs_state) \<Longrightarrow> \<not> (Vwalk.vwalk_bet Graph.digraph_abs v p t)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P "
+lemma invar_3_props[elim!]: "invar_3 dfs_state \<Longrightarrow> (\<lbrakk>\<And>v p. v \<in> t_set (visited dfs_state) \<Longrightarrow> \<not> (Vwalk.vwalk_bet (Graph.digraph_abs G) v p t)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P "
   by (auto simp: invar_3_def)
 
-lemma invar_3_intro[invar_props_intros]: "\<lbrakk>\<And>v p. v \<in> t_set (visited dfs_state) \<Longrightarrow>  \<not> (Vwalk.vwalk_bet Graph.digraph_abs v p t)\<rbrakk> \<Longrightarrow> invar_3 dfs_state"
+lemma invar_3_intro[invar_props_intros]: "\<lbrakk>\<And>v p. v \<in> t_set (visited dfs_state) \<Longrightarrow>  \<not> (Vwalk.vwalk_bet (Graph.digraph_abs G) v p t)\<rbrakk> \<Longrightarrow> invar_3 dfs_state"
   by (auto simp: invar_3_def)
 
 lemma invar_3_holds_1[invar_holds_intros]:
@@ -299,7 +292,7 @@ lemma invar_3_holds_1[invar_holds_intros]:
   by (auto simp: DFS_upd1_def dest!: append_vwalk_pref intro!: invar_props_intros)
 
 lemma invar_3_holds_2[invar_holds_intros]: "\<lbrakk>DFS_call_2_conds dfs_state; invar_1 dfs_state; invar_3 dfs_state\<rbrakk> \<Longrightarrow> invar_3 (DFS_upd2 dfs_state)"
-  by (force simp: DFS_upd2_def dest!: append_vwalk_pref intro!: invar_props_intros elim!: DFS_call_2_conds)
+  by (auto simp: DFS_upd2_def elim: vwalk_betE  dest!: Graph.neighb.emptyD append_vwalk_pref intro!: invar_props_intros elim!: DFS_call_2_conds; erule vwalk_betE)+
 
 lemma invar_3_holds_4[invar_holds_intros]: "\<lbrakk>DFS_ret_1_conds dfs_state; invar_3 dfs_state\<rbrakk> \<Longrightarrow> invar_3 (DFS_ret1 dfs_state)"
   by (auto simp: intro: invar_props_intros)
@@ -363,14 +356,14 @@ proof(induction rule: DFS_induct[OF assms(1)])
 qed
 
 definition "state_rel_2 dfs_state_1 dfs_state_2 
-              \<equiv> (\<forall>v \<in> set (stack dfs_state_1). ((\<exists>p. Vwalk.vwalk_bet Graph.digraph_abs v p t) \<or> v = t) \<longrightarrow> v \<in> set (stack dfs_state_2))"
+              \<equiv> (\<forall>v \<in> set (stack dfs_state_1). ((\<exists>p. Vwalk.vwalk_bet (Graph.digraph_abs G) v p t) \<or> v = t) \<longrightarrow> v \<in> set (stack dfs_state_2))"
 
 lemma state_rel_2_props[elim!]: "state_rel_2 dfs_state_1 dfs_state_2 \<Longrightarrow>
-                                  \<lbrakk>\<lbrakk>\<And>v.\<lbrakk>v \<in> set (stack dfs_state_1); (\<exists>p. Vwalk.vwalk_bet Graph.digraph_abs v p t) \<or> v = t\<rbrakk>
+                                  \<lbrakk>\<lbrakk>\<And>v.\<lbrakk>v \<in> set (stack dfs_state_1); (\<exists>p. Vwalk.vwalk_bet (Graph.digraph_abs G) v p t) \<or> v = t\<rbrakk>
                                     \<Longrightarrow> v \<in> set (stack dfs_state_2)\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P "
   by (auto simp: state_rel_2_def)
 
-lemma state_rel_2_intro[state_rel_intros]: "\<lbrakk>\<And>v. \<lbrakk>v \<in> set (stack dfs_state_1); (\<exists>p. Vwalk.vwalk_bet Graph.digraph_abs v p t) \<or> v = t\<rbrakk>
+lemma state_rel_2_intro[state_rel_intros]: "\<lbrakk>\<And>v. \<lbrakk>v \<in> set (stack dfs_state_1); (\<exists>p. Vwalk.vwalk_bet (Graph.digraph_abs G) v p t) \<or> v = t\<rbrakk>
                                     \<Longrightarrow> v \<in> set (stack dfs_state_2)\<rbrakk> \<Longrightarrow> state_rel_2 dfs_state_1 dfs_state_2"
   by (auto simp: state_rel_2_def)
 
@@ -385,7 +378,7 @@ lemma state_rel_2_holds_1[state_rel_holds_intros]:
 
 lemma state_rel_2_holds_2[state_rel_holds_intros]:
   "\<lbrakk>DFS_call_2_conds dfs_state; invar_1 dfs_state; invar_3 dfs_state\<rbrakk> \<Longrightarrow> state_rel_2 dfs_state (DFS_upd2 dfs_state)"
-  by (force simp: DFS_upd2_def intro!: state_rel_intros elim!: DFS_call_2_conds)
+  by (auto simp: DFS_upd2_def elim: vwalk_betE  dest!: Graph.neighb.emptyD append_vwalk_pref intro!: state_rel_intros elim!: DFS_call_2_conds; erule vwalk_betE)+
 
 lemma state_rel_2_holds_4[state_rel_holds_intros]:
   "\<lbrakk>DFS_ret_1_conds dfs_state\<rbrakk> \<Longrightarrow> state_rel_2 dfs_state (DFS_ret1 dfs_state)"

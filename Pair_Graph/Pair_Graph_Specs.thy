@@ -44,27 +44,19 @@ lemma emptyD[dest]:
 
 end
 
-
 locale Adj_Map_Specs = 
  adj: Map 
  where update = update and invar = adj_inv +
 
  neighb: Set_Choose
-where empty = neighb_empty and delete = neighb_delete and insert = neighb_insert and invar = neighb_inv
+ where empty = neighb_empty and delete = neighb_delete and insert = neighb_insert and invar = neighb_inv
       and isin = isin
 
  for update :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj" and adj_inv :: "'adj \<Rightarrow> bool"  and
 
      neighb_empty :: "'neighb"  ("\<emptyset>\<^sub>N") and neighb_delete :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'neighb" and
-     neighb_insert and neighb_inv and isin +
+     neighb_insert and neighb_inv and isin
 
-fixes adj_foreach :: "('a \<Rightarrow> 'a set \<Rightarrow> 'a set) \<Rightarrow> 'adj \<Rightarrow> 'a set \<Rightarrow> 'a set"
-assumes
-   adj_foreach[simp]:
-    "adj_inv adj_map \<Longrightarrow> (\<exists>xs. adj_foreach f adj_map a0 =  fold f xs a0 \<and> set xs = dom (lookup adj_map))"
-   \<comment> \<open>Every folding function that is needed for the domain of the map or the elements of the set
-       can be added explicitly like this. There is no need to fix the function, but we need to fix
-       its type.\<close>
   \<comment> \<open>Why do we need ann efficient neghbourhood test?\<close>
 
 begin
@@ -72,23 +64,40 @@ begin
 abbreviation isin' (infixl "\<in>\<^sub>G" 50) where "isin' G v \<equiv> isin v G" 
 abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equiv> \<not> isin' G v"
 
+definition "set_of_map (m::'adj) \<equiv> {(u,v). case (lookup m u) of Some vs \<Rightarrow> v \<in>\<^sub>G vs}"
+
+
 
 end
 
+no_notation digraph ("digraph")
+
 locale Pair_Graph_Specs = 
   Adj_Map_Specs where update = update
-for update :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj"  +
+for update :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj"  (*+
+fixes graph_inv:: "'adj \<Rightarrow> bool"
 
-fixes digraph::"'adj" 
-assumes digraph_invar:
+assumes neighbourhood_invars:
+ "graph_inv G \<Longrightarrow> adj_inv G"
+ "\<lbrakk>graph_inv G; lookup G v = Some neighb\<rbrakk> \<Longrightarrow> neighb_inv neighb"
+
    "adj_inv digraph" and
    \<comment> \<open>This is because in the abstract graph model we have no disconnected vertices.\<close>
    neighbourhood_invars:
    "(lookup digraph v = Some neighb)"
-   "lookup digraph v = Some neighb \<Longrightarrow> neighb_inv neighb"
+   "lookup digraph v = Some neighb \<Longrightarrow> neighb_inv neighb"*)
 
 begin
 
+definition "graph_inv G \<equiv> (adj_inv G \<and> (\<forall>v neighb. lookup G v = Some neighb \<longrightarrow> neighb_inv neighb))"
+
+lemma graph_invE[elim]: 
+  "graph_inv G \<Longrightarrow> (\<lbrakk>adj_inv G; (\<And>v neighb. lookup G v = Some neighb \<Longrightarrow> neighb_inv neighb)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+  by (auto simp: graph_inv_def)
+
+lemma graph_invI[intro]: 
+  "\<lbrakk>adj_inv G; (\<And>v neighb. lookup G v = Some neighb \<Longrightarrow> neighb_inv neighb)\<rbrakk> \<Longrightarrow> graph_inv G"
+  by (auto simp: graph_inv_def)
 
 declare adj.map_empty[simp] adj.map_update[simp] adj.map_delete[simp] adj.invar_empty[simp]
         adj.invar_update[simp] adj.invar_delete[simp]
@@ -96,15 +105,16 @@ declare adj.map_empty[simp] adj.map_update[simp] adj.map_delete[simp] adj.invar_
 declare neighb.set_empty[simp] neighb.set_isin[simp] neighb.set_insert[simp] neighb.set_delete[simp]
         neighb.invar_empty[simp] neighb.invar_insert[simp] neighb.invar_delete[simp] neighb.choose[simp]
 
-definition neighbourhood::"'a \<Rightarrow> 'neighb" where "neighbourhood v \<equiv> the (lookup digraph v)"
+definition neighbourhood::"'adj \<Rightarrow> 'a \<Rightarrow> 'neighb" where
+  "neighbourhood G v \<equiv> (case (lookup G v) of Some neighb \<Rightarrow> neighb | _ \<Rightarrow> neighb_empty)"
 
-notation "neighbourhood" ("\<N>\<^sub>G _" 100)
+notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
 lemma neighbourhood_invars'[simp]:
-   "neighb_inv (\<N>\<^sub>G v)"
-  by (auto simp add: neighbourhood_def neighbourhood_invars)
+   "graph_inv G \<Longrightarrow> neighb_inv (\<N>\<^sub>G G v)"
+  by (auto simp add: graph_inv_def neighbourhood_def split: option.splits)
 
-definition "digraph_abs \<equiv> {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G u)}"
+definition "digraph_abs G \<equiv> {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}"
 
 subsection \<open>Abstraction lemmas\<close>
 
@@ -113,22 +123,63 @@ text \<open>These are lemmas for automation. Their purpose is to remove any ment
       on pair graphs.\<close>
 
 lemma are_connected_abs: 
-  "v \<in> t_set (\<N>\<^sub>G u) \<longleftrightarrow> (u,v) \<in> digraph_abs"
-  by(auto simp: digraph_abs_def neighbourhood_def option.discI neighbourhood_invars
+  "graph_inv G \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u) \<longleftrightarrow> (u,v) \<in> digraph_abs G"
+  by(auto simp: digraph_abs_def neighbourhood_def option.discI graph_inv_def
           split: option.split)
 
 lemma are_connected_absD[dest!]: 
-  "v \<in> t_set (\<N>\<^sub>G u) \<Longrightarrow> (u,v) \<in> digraph_abs"
+  "\<lbrakk>v \<in> t_set (\<N>\<^sub>G G u); graph_inv G\<rbrakk> \<Longrightarrow> (u,v) \<in> digraph_abs G"
   by (auto simp: are_connected_abs)
 
 lemma are_connected_absI[intro!]: 
-  "(u,v) \<in> digraph_abs \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G u)"
+  "\<lbrakk>(u,v) \<in> digraph_abs G; graph_inv G\<rbrakk> \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u)"
   by (auto simp: are_connected_abs)
 
-
 lemma neighbourhood_absD[dest!]:
-  "t_set (\<N>\<^sub>G x) \<noteq> {} \<Longrightarrow> x \<in> dVs digraph_abs"
+  "\<lbrakk>t_set (\<N>\<^sub>G G x) \<noteq> {}; graph_inv G\<rbrakk> \<Longrightarrow> x \<in> dVs (digraph_abs G)"
   by (auto simp: digraph_abs_def dVs_def dest!: neighb.emptyD)
+
+definition "add_edge G u v \<equiv> 
+( 
+  case (lookup G u) of Some neighb \<Rightarrow> 
+  let
+    neighb = the (lookup G u);
+    neighb' = neighb_insert v neighb;
+    digraph' = update u neighb' G
+  in
+    digraph'
+  | _ \<Rightarrow>
+  let
+    neighb' = neighb_insert v neighb_empty;
+    digraph' = update u neighb' G
+  in
+    digraph'
+ 
+)"
+
+lemma adj_inv_insert: "graph_inv G \<Longrightarrow> graph_inv (add_edge G u v)"
+  by (auto simp: add_edge_def graph_inv_def split: option.splits)
+
+lemma digraph_abs_insert: "graph_inv G \<Longrightarrow> digraph_abs (add_edge G u v) = insert (u,v) (digraph_abs G)"
+  by (fastforce simp add: digraph_abs_def set_of_map_def neighbourhood_def add_edge_def split: option.splits if_splits)
+
+definition "delete_edge G u v \<equiv> 
+( 
+  case (lookup G u) of Some neighb \<Rightarrow> 
+  let
+    neighb = the (lookup G u);
+    neighb' = neighb_delete v neighb;
+    digraph' = update u neighb' G
+  in
+    digraph'
+  | _ \<Rightarrow> G 
+)"
+
+lemma adj_inv_delete: "graph_inv G \<Longrightarrow> graph_inv (delete_edge G u v)"
+  by (auto simp: delete_edge_def graph_inv_def split: option.splits)
+
+lemma digraph_abs_delete:  "graph_inv G \<Longrightarrow> digraph_abs (delete_edge G u v) = (digraph_abs G) - {(u,v)}"
+  by (fastforce simp add: digraph_abs_def set_of_map_def neighbourhood_def delete_edge_def split: option.splits if_splits)
 
 end  
 
