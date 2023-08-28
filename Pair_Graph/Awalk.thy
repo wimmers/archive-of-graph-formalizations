@@ -377,7 +377,7 @@ lemma awalk_imp_vwalk:
   assumes "awalk E u p v" shows "vwalk_bet E u (awalk_verts u p) v"
   using assms
   by (induction p arbitrary: u rule: edges_of_vwalk.induct)
-     (auto simp: awalk_simps vwalk_bet_reflexive edges_are_vwalk_bet, simp add: vwalk_bet_def)
+     (auto simp: awalk_simps vwalk_bet_reflexive edges_are_vwalk_bet vwalk_bet_def)
 
 lemma awalkE_vwalk:
   assumes "awalk E u p v"

@@ -246,7 +246,8 @@ text \<open>
 lemma induced_subgraph_dVs_subset_iff:
   "induced_subgraph H G \<Longrightarrow> induced_subgraph H' G \<Longrightarrow> dVs H \<subset> dVs H' \<longleftrightarrow> H \<subset> H'"
   unfolding induced_subgraph_def induce_subgraph_def subset_eq
-  by (auto dest: dVs_subset) blast
+  apply (auto dest!: dVs_subset)
+  by (smt (verit, best) case_prodD case_prodI mem_Collect_eq subsetD) 
 
 lemma in_sccs_dVsI[intro]:
   fixes G :: "'a dgraph"

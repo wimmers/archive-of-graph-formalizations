@@ -372,11 +372,13 @@ lemma sccs_dVs_restrict_eq:
 lemma in_sccs_dVsI_sccs:
   assumes "S \<in> dVs ` sccs G" shows "S \<in> sccs_dVs G"
   using assms
-  by (force simp: sccs_dVs_eq in_sccs_iff wf_digraph.sccs_verts_conv image_iff)
+  apply (auto simp: sccs_dVs_eq in_sccs_iff wf_digraph.sccs_verts_conv image_iff)
+  by (metis ddfs.verts_eq)
 
 
 lemma arc_mono_strongly_connected[intro,simp]: "arc_mono strongly_connected"
-  by (auto simp: arc_mono_def strongly_connected_def dest: reachable_mono)
+  apply (auto simp: arc_mono_def strongly_connected_def dest: reachable_mono)
+  by (meson reachable_mono)
 
 lemma sccs_altdef:
   "sccs G = {H. max_subgraph G strongly_connected H}" (is "?L = ?R")
@@ -652,7 +654,8 @@ lemma not_in_dVs_sccs_singleton_scc:
   fixes G :: "'a dgraph"
   shows "\<lbrakk>u \<in> dVs G; u \<notin> dVs (\<Union>(sccs G))\<rbrakk> \<Longrightarrow> scc_of G u = {u}"
   using in_scc_ofD not_in_dVs_sccs_not_reachable_and_reach
-  by fastforce
+  apply auto
+  by (smt (verit, best) in_scc_ofD(1) in_scc_ofD(2) not_in_dVs_sccs_not_reachable_and_reach)
 
 declare ddfs_library_adaptor_simps[simp del]
 

@@ -8,7 +8,6 @@ inductive vwalk where
   vwalk1: "v \<in> dVs dG \<Longrightarrow> vwalk [v]" |
   vwalk2: "(v,v') \<in> dG \<Longrightarrow> vwalk (v'#vs) \<Longrightarrow> vwalk (v#v'#vs)"
 end
-
 declare vwalk0[simp]
 
 inductive_simps vwalk_1[simp]: "vwalk E [v]"
@@ -34,10 +33,19 @@ lemma hd_of_vwalk_bet':
   "vwalk_bet dG v p v' \<Longrightarrow> v = hd p"
   by(auto simp: neq_Nil_conv vwalk_bet_def)
 
+\<comment> \<open>TODO: intro\<close>
+
+lemma hd_of_vwalk_bet'': "vwalk_bet dG u p v \<Longrightarrow> u \<in> set p"
+  using hd_of_vwalk_bet
+  by force 
+
 lemma last_of_vwalk_bet: 
   "vwalk_bet dG v p v' \<Longrightarrow> v' = last p"
   by(auto simp: neq_Nil_conv vwalk_bet_def)
 
+lemma last_of_vwalk_bet': 
+  "vwalk_bet dG v p v' \<Longrightarrow> \<exists>p'. p = p' @ [v']"
+  by(auto simp: vwalk_bet_def dest: append_butlast_last_id[symmetric])
 
 lemma append_vwalk_pref: "vwalk dG (p1 @ p2) \<Longrightarrow> vwalk dG p1"
   by (induction p1) (fastforce intro: vwalk.intros elim: vwalk.cases simp: dVsI)+
@@ -48,6 +56,7 @@ lemma append_vwalk_suff: "vwalk dG (p1 @ p2) \<Longrightarrow> vwalk dG p2"
 lemma append_vwalk: "vwalk dG p1 \<Longrightarrow> vwalk dG p2 \<Longrightarrow> (p1 \<noteq> [] \<Longrightarrow> p2 \<noteq> [] \<Longrightarrow> (last p1, hd p2) \<in> dG) \<Longrightarrow> vwalk dG (p1 @ p2)"
   by (induction p1) (fastforce intro: vwalk.intros elim: vwalk.cases simp: dVsI)+
 
+\<comment> \<open>TODO: dest\<close>
 lemma split_vwalk:
   "vwalk_bet dG v1 (p1 @ v2 # p2) v3 \<Longrightarrow> vwalk_bet dG v2 (v2 # p2) v3"
   unfolding vwalk_bet_def
@@ -293,7 +302,7 @@ lemma vwalk_bet_nonempty_vwalk[elim]:
   using assms 
   unfolding vwalk_bet_def by blast+
 
-lemma vwalk_bet_reflexive:
+lemma vwalk_bet_reflexive[intro]:
   assumes "w \<in> dVs E"
   shows "vwalk_bet E w [w] w"
   using assms 
@@ -301,6 +310,9 @@ lemma vwalk_bet_reflexive:
 
 lemma singleton_hd_last: "q \<noteq> [] \<Longrightarrow> tl q = [] \<Longrightarrow> hd q = last q"
   by (cases q) simp_all
+
+lemma singleton_hd_last': "q \<noteq> [] \<Longrightarrow> butlast q = [] \<Longrightarrow> hd q = last q"
+  by (cases q) auto
 
 lemma vwalk_bet_transitive:
   assumes "vwalk_bet E u p v" "vwalk_bet E v q w"
@@ -903,7 +915,7 @@ lemma vwalk_bet_to_distinct_is_distinct_vwalk_bet:
   using assms
   by (induction rule: vwalk_bet_to_distinct_induct) (auto simp: distinct_vwalk_bet_def)
 
-lemma vwalk_betE[elim]:
+lemma vwalk_betE[elim?]:
   assumes "vwalk_bet E u p v"
   assumes singleton: "\<lbrakk> v\<in> dVs E; u = v\<rbrakk> \<Longrightarrow> P"
   assumes
@@ -911,5 +923,146 @@ lemma vwalk_betE[elim]:
   shows "P"
   using assms
   by (induction rule: induct_vwalk_bet) auto
+
+lemma vwalk_subset:
+  "\<lbrakk>vwalk G p; G \<subseteq> G'\<rbrakk> \<Longrightarrow> vwalk G' p"
+  by (induction p rule: vwalk.induct) (auto simp: dVs_def)
+
+lemma vwalk_bet_subset:
+  "\<lbrakk>vwalk_bet G u p v; G \<subseteq> G'\<rbrakk> \<Longrightarrow> vwalk_bet G' u p v"
+  using vwalk_subset
+  by (auto simp: vwalk_bet_def)
+
+lemma reachable_subset[intro]:
+  "\<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v; G \<subseteq> G'\<rbrakk> \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G'\<^esub> v"
+  by(auto simp add: reachable_vwalk_bet_iff dest: vwalk_bet_subset)
+
+lemma reachable_Union_1[intro]:
+  "\<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v\<rbrakk> \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G \<union> G'\<^esub> v"
+  "\<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v\<rbrakk> \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>G' \<union> G\<^esub> v"
+  by auto
+
+lemma reachableE[elim?]:
+  assumes "reachable E u v"
+  assumes singleton: "\<lbrakk> v\<in> dVs E; u = v\<rbrakk> \<Longrightarrow> P"
+  assumes
+    step: "\<And>x. \<lbrakk> (u,x)\<in>E; reachable E x v\<rbrakk> \<Longrightarrow> P"
+  shows "P"
+  using assms
+  by (metis converse_tranclE reachable1_reachable reachable_in_dVs(2) reachable_neq_reachable1 reachable_refl)
+
+
+lemma vwalk_insertE[case_names nil sing1 sing2 in_e in_E]:
+   "\<lbrakk>vwalk (insert e E) p; 
+     (p = [] \<Longrightarrow> P);
+     (\<And>u v. p = [v] \<Longrightarrow> e = (u,v) \<Longrightarrow> P);
+     (\<And>u v. p = [v] \<Longrightarrow> e = (v,u) \<Longrightarrow> P);
+     (\<And>v. p = [v] \<Longrightarrow> v \<in> dVs E \<Longrightarrow> P);
+     (\<And>p' v1 v2. \<lbrakk>vwalk {e} [v1, v2]; vwalk (insert e E) (v2 # p'); p = v1 # v2 # p'\<rbrakk> \<Longrightarrow> P);
+     (\<And>p' v1 v2. \<lbrakk>vwalk E [v1,v2]; vwalk (insert e E) (v2 # p'); p = v1 # v2 # p'\<rbrakk> \<Longrightarrow> P )\<rbrakk>
+    \<Longrightarrow> P"
+proof(induction rule: vwalk.induct)
+  case vwalk0
+  then show ?case 
+    by auto
+next
+  case (vwalk1 v)
+  then show ?case
+    by (auto simp: dVs_def)
+next
+  case (vwalk2 v v' vs)
+  then show ?case
+    apply (auto simp: dVs_def)
+    by (metis insertCI)
+qed
+
+text \<open>A lemma which allows for case splitting over paths when doing induction on graph edges.\<close>
+
+lemma vwalk_bet_insertE[case_names nil sing1 sing2 in_e in_E]:
+   "\<lbrakk>vwalk_bet (insert e E) v1 p v2; 
+     (\<lbrakk>v1\<in>dVs (insert e E); v1 = v2; p = []\<rbrakk> \<Longrightarrow> P);
+     (\<And>u v. p = [u] \<Longrightarrow> e = (u,v) \<Longrightarrow> P);
+     (\<And>u v. p = [v] \<Longrightarrow> e = (u,v) \<Longrightarrow> P);
+     (\<And>v. p = [v] \<Longrightarrow> v = v1 \<Longrightarrow> v = v2 \<Longrightarrow> v \<in> dVs E \<Longrightarrow> P);
+     (\<And>p' v3. \<lbrakk>vwalk_bet {e} v1 [v1,v3] v3; vwalk_bet (insert e E) v3 (v3 # p') v2; p = v1 # v3 # p'\<rbrakk> \<Longrightarrow> P);
+     (\<And>p' v3. \<lbrakk>vwalk_bet E v1 [v1,v3] v3; vwalk_bet (insert e E) v3 (v3 # p') v2; p = v1 # v3 # p'\<rbrakk> \<Longrightarrow> P)\<rbrakk>
+    \<Longrightarrow> P"
+  unfolding vwalk_bet_def
+  apply safe
+  apply(erule vwalk_insertE)
+  by (simp | force)+
+
+find_theorems name: induct vwalk_bet
+
+lemma vwalk_bet2[simp]:
+  "vwalk_bet G u (u # v # vs) b \<longleftrightarrow> ((u,v) \<in> G \<and> vwalk_bet G v (v # vs) b)"
+  by(auto simp: vwalk_bet_def)
+
+(*lemma assumes "vwalk_bet G' u p v""G \<subseteq> G'""u \<in> dVs G"
+  shows "vwalk_bet G u p v \<or> 
+       (\<exists>p1 w p2. vwalk_bet G' u p1 w \<and> w \<in> dVs G \<and> hd p2 \<notin> dVs G \<and> vwalk_bet G' w (w#p2) v)"
+  using assms                              
+proof(induction rule: induct_vwalk_bet)
+  case (path1 v)
+  then show ?case 
+   by auto
+next
+  case (path2 u v vs b)
+  then show ?case
+  proof(cases "(u,v) \<notin> G")
+    case T1: True
+    then show ?thesis
+    proof(cases "v \<notin> dVs G")
+      case T2: True
+      hence "vwalk_bet G u [u] u \<and> hd (v # vs) \<notin> dVs G \<and> vwalk_bet G' u (u # v # vs) b"
+        using path2
+        by auto
+      then show ?thesis
+        by metis
+    next
+      case F2: False
+      hence "v \<in> dVs G"
+        by auto
+      hence "vwalk_bet G v (v # vs) b \<or> (\<exists>p1 w p2. vwalk_bet G v p1 w \<and> hd p2 \<notin> dVs G \<and> vwalk_bet G' w (w # p2) b)"
+        using path2
+        by auto
+      with path2 show ?thesis
+      proof(elim disjE, goal_cases)
+        case 1
+        then show ?case
+          by auto
+      next
+        case 2
+        then show ?case sorry
+      qed
+
+    qed
+    
+  next
+    case False
+    then show ?thesis sorry
+  qed
+qed
+
+  
+  find_theorems name: split vwalk_bet
+*)
+
+lemma butlast_vwalk_is_vwalk: "vwalk E p \<Longrightarrow> vwalk E (butlast p)"
+  by (induction p rule: vwalk.induct, auto)
+
+
+lemma vwalk_concat_2:
+  assumes "vwalk E p" "vwalk E q" "q \<noteq> []" "p \<noteq> [] \<Longrightarrow> last p = hd q"
+  shows "vwalk E (butlast p @ q)"
+  using assms
+  by (induction rule: vwalk.induct) (auto simp add: butlast_vwalk_is_vwalk neq_Nil_conv)
+
+lemma vwalk_bet_transitive_2:
+  assumes "vwalk_bet E u p v" "vwalk_bet E v q w"
+  shows "vwalk_bet E u (butlast p @ q) w"
+  using assms
+  unfolding vwalk_bet_def
+  by (auto intro!: vwalk_concat_2 simp: last_append singleton_hd_last' neq_Nil_conv)
 
 end

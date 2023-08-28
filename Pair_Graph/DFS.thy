@@ -249,13 +249,14 @@ lemma invar_2_props[dest!]: "invar_2 dfs_state \<Longrightarrow> (Vwalk.vwalk (G
 lemma invar_2_intro[invar_props_intros]: "Vwalk.vwalk (Graph.digraph_abs G) (rev (stack dfs_state)) \<Longrightarrow> invar_2 dfs_state"
   by (auto simp: invar_2_def)
 
+lemmas simps[simp] = Graph.neighbourhood_abs[OF graph_inv] Graph.are_connected_abs[OF graph_inv]
+
 lemma invar_2_holds_1[invar_holds_intros]:
   assumes "DFS_call_1_conds dfs_state" "invar_1 dfs_state" "invar_2 dfs_state"
   shows "invar_2 (DFS_upd1 dfs_state)"
-    using assms
-    by (fastforce simp: DFS_upd1_def elim!: call_cond_elims
-                intro!: invar_props_intros Vwalk.vwalk_append2)
-
+    using assms graph_inv
+    by (force simp: DFS_upd1_def elim!: call_cond_elims
+                intro!: invar_props_intros Vwalk.vwalk_append2 neighbourhoodI)
 
 lemma invar_2_holds_2[invar_holds_intros]: "\<lbrakk>DFS_call_2_conds dfs_state; invar_2 dfs_state\<rbrakk> \<Longrightarrow> invar_2 (DFS_upd2 dfs_state)"
   by (auto simp: DFS_upd2_def dest!: append_vwalk_pref intro!: invar_props_intros elim: call_cond_elims)

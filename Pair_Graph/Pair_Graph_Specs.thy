@@ -66,8 +66,6 @@ abbreviation not_isin' (infixl "\<notin>\<^sub>G" 50) where "not_isin' G v \<equ
 
 definition "set_of_map (m::'adj) \<equiv> {(u,v). case (lookup m u) of Some vs \<Rightarrow> v \<in>\<^sub>G vs}"
 
-
-
 end
 
 no_notation digraph ("digraph")
@@ -110,7 +108,7 @@ definition neighbourhood::"'adj \<Rightarrow> 'a \<Rightarrow> 'neighb" where
 
 notation "neighbourhood" ("\<N>\<^sub>G _ _" 100)
 
-lemma neighbourhood_invars'[simp]:
+lemma neighbourhood_invars'[simp,dest]:
    "graph_inv G \<Longrightarrow> neighb_inv (\<N>\<^sub>G G v)"
   by (auto simp add: graph_inv_def neighbourhood_def split: option.splits)
 
@@ -122,22 +120,27 @@ text \<open>These are lemmas for automation. Their purpose is to remove any ment
       concept implemented using the locale constructs and replace it with abstract terms
       on pair graphs.\<close>
 
-lemma are_connected_abs: 
+lemma are_connected_abs[simp]: 
   "graph_inv G \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u) \<longleftrightarrow> (u,v) \<in> digraph_abs G"
   by(auto simp: digraph_abs_def neighbourhood_def option.discI graph_inv_def
           split: option.split)
 
-lemma are_connected_absD[dest!]: 
+lemma are_connected_absD[dest]: 
   "\<lbrakk>v \<in> t_set (\<N>\<^sub>G G u); graph_inv G\<rbrakk> \<Longrightarrow> (u,v) \<in> digraph_abs G"
   by (auto simp: are_connected_abs)
 
-lemma are_connected_absI[intro!]: 
+lemma are_connected_absI[intro]: 
   "\<lbrakk>(u,v) \<in> digraph_abs G; graph_inv G\<rbrakk> \<Longrightarrow> v \<in> t_set (\<N>\<^sub>G G u)"
   by (auto simp: are_connected_abs)
 
 lemma neighbourhood_absD[dest!]:
   "\<lbrakk>t_set (\<N>\<^sub>G G x) \<noteq> {}; graph_inv G\<rbrakk> \<Longrightarrow> x \<in> dVs (digraph_abs G)"
-  by (auto simp: digraph_abs_def dVs_def dest!: neighb.emptyD)
+  by (auto simp: dVs_def dest!: neighb.emptyD)
+
+lemma neighbourhood_abs[simp]:
+  "graph_inv G \<Longrightarrow> t_set (\<N>\<^sub>G G u) = Pair_Graph.neighbourhood (digraph_abs G) u"
+  by(auto simp: digraph_abs_def neighbourhood_def Pair_Graph.neighbourhood_def option.discI graph_inv_def
+          split: option.split)
 
 definition "add_edge G u v \<equiv> 
 ( 
@@ -157,10 +160,10 @@ definition "add_edge G u v \<equiv>
  
 )"
 
-lemma adj_inv_insert: "graph_inv G \<Longrightarrow> graph_inv (add_edge G u v)"
+lemma adj_inv_insert[intro]: "graph_inv G \<Longrightarrow> graph_inv (add_edge G u v)"
   by (auto simp: add_edge_def graph_inv_def split: option.splits)
 
-lemma digraph_abs_insert: "graph_inv G \<Longrightarrow> digraph_abs (add_edge G u v) = insert (u,v) (digraph_abs G)"
+lemma digraph_abs_insert[simp]: "graph_inv G \<Longrightarrow> digraph_abs (add_edge G u v) = insert (u,v) (digraph_abs G)"
   by (fastforce simp add: digraph_abs_def set_of_map_def neighbourhood_def add_edge_def split: option.splits if_splits)
 
 definition "delete_edge G u v \<equiv> 
@@ -175,10 +178,10 @@ definition "delete_edge G u v \<equiv>
   | _ \<Rightarrow> G 
 )"
 
-lemma adj_inv_delete: "graph_inv G \<Longrightarrow> graph_inv (delete_edge G u v)"
+lemma adj_inv_delete[intro]: "graph_inv G \<Longrightarrow> graph_inv (delete_edge G u v)"
   by (auto simp: delete_edge_def graph_inv_def split: option.splits)
 
-lemma digraph_abs_delete:  "graph_inv G \<Longrightarrow> digraph_abs (delete_edge G u v) = (digraph_abs G) - {(u,v)}"
+lemma digraph_abs_delete[simp]:  "graph_inv G \<Longrightarrow> digraph_abs (delete_edge G u v) = (digraph_abs G) - {(u,v)}"
   by (fastforce simp add: digraph_abs_def set_of_map_def neighbourhood_def delete_edge_def split: option.splits if_splits)
 
 end  

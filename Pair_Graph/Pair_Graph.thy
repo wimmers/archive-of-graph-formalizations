@@ -33,7 +33,7 @@ lemma dVsI':
   using assms
   by (auto intro: dVsI[of "fst e" "snd e"])
 
-lemma dVs_union_distr: "dVs (G \<union> H) = dVs G \<union> dVs H"
+lemma dVs_union_distr[simp]: "dVs (G \<union> H) = dVs G \<union> dVs H"
   unfolding dVs_def by blast
 
 lemma dVs_union_big_distr: "dVs (\<Union>G) = \<Union>(dVs ` G)"
@@ -76,9 +76,15 @@ lemma reachableE[elim?]:
 lemma reachable_refl[intro!, Pure.intro!, simp]: "v \<in> dVs E \<Longrightarrow> v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
   unfolding reachable_def by auto
 
-lemma reachable_trans[trans]:
+
+
+lemma reachable_trans[trans,intro]:
   assumes "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v" "v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w" shows "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
   using assms unfolding reachable_def by (rule rtrancl_on_trans)
+
+lemma reachable_edge[dest,intro]: "u \<rightarrow>\<^bsub>E\<^esub> v \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+  unfolding reachable_def
+  by (auto intro!: rtrancl_consistent_rtrancl_on)
 
 lemma reachable_induct[consumes 1, case_names base step]:
   assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
@@ -124,10 +130,35 @@ lemmas reachable_neq_reachable1E[elim] = reachable_neq_reachable1[elim_format]
 
 lemma arc_implies_dominates: "e \<in> E \<Longrightarrow> fst e \<rightarrow>\<^bsub>E\<^esub> snd e" by auto
 
-definition "neighbourhood G u = {(u,v). (u,v) \<in> G}"
+definition "neighbourhood G u = {v. (u,v) \<in> G}"
+
+lemma 
+  neighbourhoodI[intro]: "v \<in> (neighbourhood G u) \<Longrightarrow> (u,v) \<in> G" and
+  neighbourhoodD[dest]: "(u,v) \<in> G \<Longrightarrow> v \<in> (neighbourhood G u)"
+  by (auto simp: neighbourhood_def)
+
 
 definition "sources G = {u | u v . (u,v) \<in> G}"
 
 definition "sinks G = {v | u v . (u,v) \<in> G}"
+
+lemma dVs_subset: "G \<subseteq> G' \<Longrightarrow> dVs G \<subseteq> dVs G'"
+  by (auto simp: dVs_def)
+
+lemma dVs_insert[elim]:
+  "v\<in> dVs (insert (x,y) G) \<Longrightarrow> \<lbrakk>v = x \<Longrightarrow> P; v = y \<Longrightarrow> P; v \<in> dVs G \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+  by (auto simp: dVs_def)
+
+lemma in_neighbourhood_dVs[simp, intro]:
+  "v \<in> neighbourhood G u \<Longrightarrow> v \<in> dVs G"
+  by auto
+
+lemma in_dVsE: "v \<in> dVs G \<Longrightarrow> \<lbrakk>(\<And>u. (u, v) \<in> G \<Longrightarrow> P); (\<And>u. (v, u) \<in> G \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
+               "v \<notin> dVs G \<Longrightarrow> (\<lbrakk>(\<And>u. (u, v) \<notin> G); (\<And>u. (v, u) \<notin> G)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+  by (auto simp: dVs_def)
+
+lemma neighoubrhood_union[simp]: "neighbourhood (G \<union> G') u = neighbourhood G u \<union> neighbourhood G' u"
+  by (auto simp: neighbourhood_def)
+
 
 end
