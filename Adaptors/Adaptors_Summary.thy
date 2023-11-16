@@ -27,8 +27,8 @@ text \<open>
 
 section \<open>Graph-Theory and DDFS\<close>
 text \<open>
-  The first adaptor in \<^theory>\<open>Pair_Graph_Library_Adaptor\<close> implements both directions for 
-  \<^theory>\<open>Graph_Theory.Digraph\<close>s  and \<^theory>\<open>AGF.DDFS\<close>.
+  The first adaptor in \<^theory>\<open>AGF.Pair_Graph_Library_Adaptor\<close> implements both directions for 
+  \<^theory>\<open>Graph_Theory.Digraph\<close>s  and \<^theory>\<open>AGF.Pair_Graph\<close>.
 \<close>
 subsection \<open>Graph-Theory to DDFS\<close>
 text \<open>
@@ -156,7 +156,7 @@ text \<open>
 
 subsection \<open>DDFS to Graph-Theory\<close>
 text \<open>
-  The second part of \<^theory>\<open>Adaptors.DDFS_Library_Adaptor\<close> implements the adaptor from DDFS graphs
+  The second part of \<^theory>\<open>AGF.Pair_Graph_Library_Adaptor\<close> implements the adaptor from DDFS graphs
   to Graph-Theory graphs. This direction works smoothly, as the more expressive Graph-Theory easily
   accommodates DDFS graphs. Constructing the graph and all the proofs for the fundamental concepts
   are straightforward. This adaptor can in some sense be seen as a special case of

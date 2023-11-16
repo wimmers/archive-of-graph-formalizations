@@ -139,7 +139,7 @@ subsection \<open>Shortest Paths\<close>
 
 definition "shortest_path G u p v \<equiv> distance G u v = length p -1 \<and> vwalk_bet G u p v"
 
-lemma shortest_path_props:
+lemma shortest_path_props[elim]:
   "shortest_path G u p v \<Longrightarrow> (\<lbrakk>distance G u v = length p -1; vwalk_bet G u p v\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: shortest_path_def)
 
@@ -270,12 +270,36 @@ lemma shortest_path_exists_2:
   using assms 
   by (force dest!: dist_reachable elim!: shortest_path_exists simp: shortest_path_def)
 
+lemma not_distinct_props: 
+  "\<not>distinct xs \<Longrightarrow> (\<And>x1 x2 xs1 xs2 xs3. \<lbrakk>xs = xs1 @ x1# xs2 @ x2 # xs3; x1 = x2\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+  using not_distinct_decomp
+  by fastforce
+
+lemma shortest_path_distinct:
+  "shortest_path G u p v \<Longrightarrow> distinct p"
+  apply(erule shortest_path_props)
+  apply(rule ccontr)
+  apply(erule not_distinct_props)
+proof(goal_cases)
+  case (1 x1 x2 xs1 xs2 xs3)
+  hence "Vwalk.vwalk_bet G u (xs1 @ x2 # xs3) v"
+    using vwalk_bet_transitive_2 closed_vwalk_bet_decompE
+    by (smt (verit, best) butlast_snoc)
+  hence "distance G u v \<le> length (xs1 @ x2 # xs3) - 1"
+    using vwalk_bet_dist
+    by force
+  moreover have "length (xs1 @ x2 # xs3) < length p"
+    by(auto simp: \<open> p = xs1 @ x1 # xs2 @ x2 # xs3\<close>)
+  ultimately show ?case
+    using \<open>distance G u v = enat (length p - 1)\<close>
+    by auto
+qed
+
 lemma diet_eq': "\<lbrakk>\<And>p. shortest_path G' u p v \<Longrightarrow> shortest_path G u (map f p) v\<rbrakk> \<Longrightarrow>
                    distance G u v \<le> distance G' u v"
   apply(auto simp: shortest_path_def)
   by (metis One_nat_def Orderings.order_eq_iff order.strict_implies_order reachable_dist
             reachable_dist_2 unreachable_dist)
-
 
 lemma distance_0:
   "(u = v \<and> v \<in> dVs G) \<longleftrightarrow> distance G u v = 0"
@@ -306,8 +330,6 @@ next
   then show "u = v"  "v \<in> dVs G"
     by auto
 qed
-
-thm triangle_ineq
 
 lemma distance_neighbourhood':
   "\<lbrakk>v \<in> neighbourhood G u\<rbrakk> \<Longrightarrow> distance G x v \<le> distance G x u + 1"
@@ -359,7 +381,7 @@ definition "distance_set G U v \<equiv> INF u\<in>U. distance G u v"
 lemma dist_set_inf: "v \<notin> dVs G \<Longrightarrow> distance_set G U v = \<infinity>"
   by(auto simp: distance_set_def INF_eqI dist_inf)
 
-lemma dist_set_mem: "u \<in> U \<Longrightarrow> distance_set G U v \<le> distance G u v"
+lemma dist_set_mem[intro]: "u \<in> U \<Longrightarrow> distance_set G U v \<le> distance G u v"
   by (auto simp: distance_set_def wellorder_Inf_le1)
 
 lemma dist_not_inf'': "\<lbrakk>distance_set G U v \<noteq> \<infinity>; u\<in>U; distance G u v = distance_set G U v\<rbrakk>
@@ -701,6 +723,10 @@ lemma forest_props[elim]:
 "forest G \<Longrightarrow> (\<lbrakk> \<And>u v p p'. \<lbrakk>Vwalk.vwalk_bet G u p v; Vwalk.vwalk_bet G u p' v\<rbrakk> \<Longrightarrow> p = p'\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: forest_def)
 
+lemma forest_intro:
+"\<lbrakk> \<And>u v p p'. \<lbrakk>Vwalk.vwalk_bet G u p v; Vwalk.vwalk_bet G u p' v\<rbrakk> \<Longrightarrow> p = p'\<rbrakk> \<Longrightarrow> forest G"
+  by (auto simp: forest_def)
+
 lemma forest_subset: "\<lbrakk>forest G'; G \<subseteq> G'\<rbrakk> \<Longrightarrow> forest G"
   by(auto simp: forest_def intro!: vwalk_bet_subset)
 
@@ -723,9 +749,11 @@ lemma forest_shortest_path:
   apply(auto elim!: forest_props intro!: shortest_path_intro)
   by (metis One_nat_def reachable_dist_2 reachable_vwalk_bet_iff)
 
-
 lemma forest_insert: "\<lbrakk>forest G; v \<notin> dVs G\<rbrakk> \<Longrightarrow> forest (insert (u,v) G)"
-  sorry
+proof(intro forest_intro, goal_cases)
+  case (1 u v p p')
+  then show ?case sorry
+qed
 
 lemma forest_union: "\<lbrakk>forest G\<rbrakk> \<Longrightarrow> forest (G \<union> {(u,v). u \<in> dVs G \<and> v \<notin> dVs G})"
   using forest_subset forest_insert
@@ -734,7 +762,7 @@ lemma forest_union: "\<lbrakk>forest G\<rbrakk> \<Longrightarrow> forest (G \<un
 
 section \<open>Rooted Forest\<close>
 
-definition "rooted_forest Vs G \<equiv> forest G \<and> (\<forall>u \<in> Vs. \<forall>v \<in> Vs. <)"
+
 
 lemma distance_set_forest:
   "\<lbrakk>u \<in> Vs; reachable G u v; G \<subseteq> G'; forest G'\<rbrakk> \<Longrightarrow> distance_set G Vs v = distance_set G' Vs v"
@@ -749,16 +777,4 @@ proof(goal_cases)
     by (metis (no_types, lifting) "1"(1) "1"(2) "1"(3) \<open>vwalk_bet G u p v\<close> distance_set_0 distance_set_shortest_path reachable_in_dVs(1) vwalk_bet_endpoints(2) vwalk_bet_subset)
 qed
   
-
-
-
-(*lemma distance_set_ge_1E: "1 \<le> distance_set G Vs v \<Longrightarrow> (\<And>v'. \<lbrakk>v \<in> neighbourhood G v';  distance_set G Vs v = distance_set G Vs v' + 1\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
-  sorry
-
-lemma distance_set_ge_1E': "1 \<le> distance_set G Vs v \<Longrightarrow> (\<exists>v'. v \<in> neighbourhood G v' \<and>  distance_set G Vs v \<le> distance_set G Vs v' + 1)"
-  sorry
-*)
-lemma distance_set_subset: "G \<subseteq> G' \<Longrightarrow> distance_set G' Vs v \<le> distance_set G Vs v"
-  sorry
-
 end

@@ -1065,4 +1065,40 @@ lemma vwalk_bet_transitive_2:
   unfolding vwalk_bet_def
   by (auto intro!: vwalk_concat_2 simp: last_append singleton_hd_last' neq_Nil_conv)
 
+ lemma vwalk_not_vwalk: 
+   "\<lbrakk>vwalk G p; \<not>vwalk G' p\<rbrakk> \<Longrightarrow> 
+          (\<exists>(u,v) \<in> set (edges_of_vwalk p). (u,v) \<in> (G - G')) \<or> 
+          (\<exists>v\<in>set p. v \<in> (dVs G - dVs G'))"
+  by(induction rule: vwalk.induct) (auto simp: dVs_def)
+
+ lemma vwalk_not_vwalk_elim: 
+   "\<lbrakk>vwalk G p; \<not>vwalk G' p\<rbrakk> \<Longrightarrow> 
+          \<lbrakk>\<And>u v. \<lbrakk>(u,v) \<in> set (edges_of_vwalk p); (u,v) \<in> (G - G')\<rbrakk> \<Longrightarrow> P; 
+          \<And>v. \<lbrakk>v\<in>set p; v \<in> (dVs G - dVs G')\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+   using vwalk_not_vwalk
+   by blast
+
+ lemma vwalk_bet_not_vwalk_bet: 
+   "\<lbrakk>vwalk_bet G u p v; \<not>vwalk_bet G' u p v\<rbrakk> \<Longrightarrow> 
+          (\<exists>(u,v) \<in> set (edges_of_vwalk p). (u,v) \<in> (G - G')) \<or> 
+          (\<exists>v\<in>set p. v \<in> (dVs G - dVs G'))"
+   using vwalk_not_vwalk
+   by (auto simp: vwalk_bet_def)
+
+ lemma vwalk_bet_not_vwalk_bet_elim: 
+   "\<lbrakk>vwalk_bet G u p v; \<not>vwalk_bet G' u p v\<rbrakk> \<Longrightarrow> 
+          \<lbrakk>\<And>u v. \<lbrakk>(u,v) \<in> set (edges_of_vwalk p); (u,v) \<in> (G - G')\<rbrakk> \<Longrightarrow> P; 
+          \<And>v. \<lbrakk>v\<in>set p; v \<in> (dVs G - dVs G')\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
+   using vwalk_not_vwalk_elim
+   apply (auto simp: vwalk_bet_def)
+   by blast
+
+lemma vwalk_bet_props:
+  "vwalk_bet G u p v \<Longrightarrow> (\<lbrakk>vwalk G p; p\<noteq>[]; hd p = u; last p = v\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
+  by (auto simp: vwalk_bet_def)
+
+lemma no_outgoing_last:
+  "\<lbrakk>vwalk G p; \<And>v. (u,v) \<notin> G; u \<in> set p\<rbrakk> \<Longrightarrow> last p = u"
+  by(induction rule: vwalk.induct) (auto simp: dVs_def)
+
 end

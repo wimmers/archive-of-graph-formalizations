@@ -3,7 +3,6 @@ theory Pair_Graph_Library_Awalk_Adaptor
   imports
     AGF.Awalk_Defs
     AGF.Pair_Graph_Library_Adaptor
-    Graph_Theory.Arc_Walk
 begin
 
 context ddfs

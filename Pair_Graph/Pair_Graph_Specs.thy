@@ -12,6 +12,27 @@ text \<open>We develop a locale modelling an abstract data type (ADT) which abst
       We then show that this ADT can be implemented using existing implementations of the \<open>set\<close> ADT.
 \<close>
 
+(*
+record ('a, 's) Set_Rec = empty :: "'s" insert :: "'a \<Rightarrow> 's \<Rightarrow> 's" delete :: "'a \<Rightarrow> 's \<Rightarrow> 's"
+                          isin :: "'s \<Rightarrow> 'a \<Rightarrow> bool" set :: "'s \<Rightarrow> 'a set" invar :: "'s \<Rightarrow> bool"
+
+locale Set_Rec =
+  fixes set_rec:: "('a,'s) Set_Rec"
+  assumes "Set (empty set_rec) (insert set_rec) (delete set_rec) (isin set_rec)
+               (set set_rec) (invar set_rec)"
+    
+record ('a,'s) Set_Choose_Rec = "('a,'s) Set_Rec" + sel :: "'s \<Rightarrow> 'a"
+
+
+
+locale Set_Choose = Set_Rec set_rec
+  for set_rec::"('a,'m) Set_Rec" + 
+
+fixes sel ::"'m \<Rightarrow> 'a"
+assumes choose: "s \<noteq> (empty set_rec) \<Longrightarrow> (isin set_rec) s (sel s)"
+begin
+*)
+
 locale Set_Choose = Set 
   where set = t_set for t_set +
 fixes sel ::"'m \<Rightarrow> 'a"
@@ -70,7 +91,7 @@ end
 
 no_notation digraph ("digraph")
 
-locale Pair_Graph_Specs = 
+locale  Pair_Graph_Specs = 
   Adj_Map_Specs where update = update
 for update :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj"  (*+
 fixes graph_inv:: "'adj \<Rightarrow> bool"

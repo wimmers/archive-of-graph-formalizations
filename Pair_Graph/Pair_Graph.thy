@@ -59,6 +59,8 @@ proof
   qed
 qed
 
+(*TODO: remove notation*)
+
 abbreviation dominates :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<index>_" [100,100] 40) where
   "dominates E u v \<equiv> (u,v) \<in> E"
 
