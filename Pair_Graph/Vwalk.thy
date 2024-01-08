@@ -1071,12 +1071,28 @@ lemma vwalk_bet_transitive_2:
           (\<exists>v\<in>set p. v \<in> (dVs G - dVs G'))"
   by(induction rule: vwalk.induct) (auto simp: dVs_def)
 
+
+ lemma vwalk_not_vwalk_2: 
+   "\<lbrakk>vwalk G p; \<not>vwalk G' p; length p \<ge> 2\<rbrakk> \<Longrightarrow> 
+          (\<exists>(u,v) \<in> set (edges_of_vwalk p). (u,v) \<in> (G - G'))"
+   apply (induction rule: vwalk.induct) 
+   apply (auto simp: dVs_def)
+   by (metis Suc_leI dVsI(2) length_greater_0_conv vwalk_1)
+
  lemma vwalk_not_vwalk_elim: 
    "\<lbrakk>vwalk G p; \<not>vwalk G' p\<rbrakk> \<Longrightarrow> 
           \<lbrakk>\<And>u v. \<lbrakk>(u,v) \<in> set (edges_of_vwalk p); (u,v) \<in> (G - G')\<rbrakk> \<Longrightarrow> P; 
           \<And>v. \<lbrakk>v\<in>set p; v \<in> (dVs G - dVs G')\<rbrakk> \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P"
    using vwalk_not_vwalk
    by blast
+
+ lemma vwalk_not_vwalk_elim_2: 
+   "\<lbrakk>vwalk G p; \<not>vwalk G' p; length p \<ge> 2\<rbrakk> \<Longrightarrow> 
+          \<lbrakk>\<And>u v. \<lbrakk>(u,v) \<in> set (edges_of_vwalk p); (u,v) \<in> (G - G')\<rbrakk> \<Longrightarrow> P 
+          \<rbrakk> \<Longrightarrow> P"
+   using vwalk_not_vwalk_2
+   by blast
+
 
  lemma vwalk_bet_not_vwalk_bet: 
    "\<lbrakk>vwalk_bet G u p v; \<not>vwalk_bet G' u p v\<rbrakk> \<Longrightarrow> 
@@ -1092,6 +1108,15 @@ lemma vwalk_bet_transitive_2:
    using vwalk_not_vwalk_elim
    apply (auto simp: vwalk_bet_def)
    by blast
+
+ lemma vwalk_bet_not_vwalk_bet_elim_2: 
+   "\<lbrakk>vwalk_bet G u p v; \<not>vwalk_bet G' u p v; length p \<ge> 2\<rbrakk> \<Longrightarrow> 
+          \<lbrakk>\<And>u v. \<lbrakk>(u,v) \<in> set (edges_of_vwalk p); (u,v) \<in> (G - G')\<rbrakk> \<Longrightarrow> P 
+          \<rbrakk> \<Longrightarrow> P"
+   using vwalk_not_vwalk_elim_2
+   apply (auto simp: vwalk_bet_def)
+   by blast
+
 
 lemma vwalk_bet_props:
   "vwalk_bet G u p v \<Longrightarrow> (\<lbrakk>vwalk G p; p\<noteq>[]; hd p = u; last p = v\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"

@@ -33,6 +33,12 @@ assumes choose: "s \<noteq> (empty set_rec) \<Longrightarrow> (isin set_rec) s (
 begin
 *)
 
+locale Set_Map = Set
+  where set = t_set for t_set +
+fixes t_map ::"('a \<Rightarrow> 'a) \<Rightarrow> 'm \<Rightarrow> 'm"
+assumes map: "bij_betw f (t_set s) t  \<Longrightarrow> t_set (t_map f s) = t"
+
+
 locale Set_Choose = Set 
   where set = t_set for t_set +
 fixes sel ::"'m \<Rightarrow> 'a"
@@ -93,7 +99,7 @@ no_notation digraph ("digraph")
 
 locale  Pair_Graph_Specs = 
   Adj_Map_Specs where update = update
-for update :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj"  (*+
+for update :: "'a \<Rightarrow> 'neighb \<Rightarrow> 'adj \<Rightarrow> 'adj" (*+
 fixes graph_inv:: "'adj \<Rightarrow> bool"
 
 assumes neighbourhood_invars:
@@ -104,11 +110,17 @@ assumes neighbourhood_invars:
    \<comment> \<open>This is because in the abstract graph model we have no disconnected vertices.\<close>
    neighbourhood_invars:
    "(lookup digraph v = Some neighb)"
-   "lookup digraph v = Some neighb \<Longrightarrow> neighb_inv neighb"*)
+   "lookup digraph v = Some neighb \<Longrightarrow> neighb_inv neighb"
+
+assumes finite_neighbourhoods:
+        "finite {v. (lookup G v) \<noteq> None}"
+        "finite (t_set N)"*)
 
 begin
 
 definition "graph_inv G \<equiv> (adj_inv G \<and> (\<forall>v neighb. lookup G v = Some neighb \<longrightarrow> neighb_inv neighb))"
+definition "finite_graph G \<equiv> (finite {v. (lookup G v) \<noteq> None})"
+definition "finite_neighbs \<equiv> (\<forall>N. finite (t_set N))"
 
 lemma graph_invE[elim]: 
   "graph_inv G \<Longrightarrow> (\<lbrakk>adj_inv G; (\<And>v neighb. lookup G v = Some neighb \<Longrightarrow> neighb_inv neighb)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
@@ -117,6 +129,22 @@ lemma graph_invE[elim]:
 lemma graph_invI[intro]: 
   "\<lbrakk>adj_inv G; (\<And>v neighb. lookup G v = Some neighb \<Longrightarrow> neighb_inv neighb)\<rbrakk> \<Longrightarrow> graph_inv G"
   by (auto simp: graph_inv_def)
+
+lemma finite_graphE[elim]: 
+  "finite_graph G \<Longrightarrow> (finite {v. (lookup G v) \<noteq> None} \<Longrightarrow> P) \<Longrightarrow> P"
+  by (auto simp: finite_graph_def)
+
+lemma finite_graphI[intro]: 
+  "finite {v. (lookup G v) \<noteq> None}  \<Longrightarrow> finite_graph G"
+  by (auto simp: finite_graph_def)
+
+lemma finite_neighbsE[elim]: 
+  "finite_neighbs \<Longrightarrow> ((\<And>N. finite (t_set N)) \<Longrightarrow> P) \<Longrightarrow> P"
+  by (auto simp: finite_neighbs_def)
+
+lemma finite_neighbsI[intro]: 
+  "(\<And>N. finite (t_set N)) \<Longrightarrow> finite_neighbs"
+  by (auto simp: finite_neighbs_def)
 
 declare adj.map_empty[simp] adj.map_update[simp] adj.map_delete[simp] adj.invar_empty[simp]
         adj.invar_update[simp] adj.invar_delete[simp]
@@ -134,6 +162,36 @@ lemma neighbourhood_invars'[simp,dest]:
   by (auto simp add: graph_inv_def neighbourhood_def split: option.splits)
 
 definition "digraph_abs G \<equiv> {(u,v). v \<in>\<^sub>G (\<N>\<^sub>G G u)}"
+
+lemma finite_graph[intro!]:
+  assumes "graph_inv G" "finite_graph G" "finite_neighbs"
+  shows "finite (digraph_abs G)"
+proof-
+
+  have "digraph_abs G \<subseteq> {v. lookup G v \<noteq> None} \<times> (\<Union> (t_set ` {N | N v. lookup G v = Some N}))"
+    using assms 
+    by (fastforce simp: digraph_abs_def neighbourhood_def graph_inv_def split: option.splits)
+
+  moreover have "finite {v. lookup G v \<noteq> None}"
+    using assms
+    by fastforce
+
+  moreover have "finite (\<Union> (t_set ` {N | N v. lookup G v = Some N}))"
+    using assms
+    by (force elim!: finite_neighbsE finite_graphE
+              intro!: finite_imageI 
+                      rev_finite_subset
+                        [where B = "(the o lookup G) ` {v. \<exists>y. lookup G v = Some y}"])
+  ultimately show ?thesis
+    by(fastforce intro!: finite_cartesian_product dest: finite_subset)+
+
+qed
+
+corollary finite_vertices[intro!]:
+  assumes "graph_inv G" "finite_graph G" "finite_neighbs"
+  shows "finite (dVs (digraph_abs G))"
+  using finite_graph[OF assms]
+  by (simp add: finite_vertices_iff)
 
 subsection \<open>Abstraction lemmas\<close>
 

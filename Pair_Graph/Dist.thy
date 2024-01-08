@@ -690,7 +690,7 @@ lemma distance_set_parent':
   using distance_set_parent
   by (metis antisym_conv2 dist_set_inf distance_0 distance_set_def less_INF_D order.strict_implies_order)
 
-lemma distance_set_0: "\<lbrakk>v \<in> dVs G\<rbrakk> \<Longrightarrow> distance_set G Vs v = 0 \<longleftrightarrow> v \<in> Vs"
+lemma distance_set_0[simp]: "\<lbrakk>v \<in> dVs G\<rbrakk> \<Longrightarrow> distance_set G Vs v = 0 \<longleftrightarrow> v \<in> Vs"
 proof(safe, goal_cases)
   case 2
   moreover have "distance G v v = 0"
@@ -715,6 +715,11 @@ lemma dist_set_eq:
 lemma distance_set_subset: "G \<subseteq> G' \<Longrightarrow> distance_set G' Vs v \<le> distance_set G Vs v"
   by (simp add: dist_set_leq distance_subset)
 
+lemma vwalk_bet_dist_set:
+  "\<lbrakk>Vwalk.vwalk_bet G u p v; u \<in> U\<rbrakk> \<Longrightarrow> distance_set G U v \<le> length p - 1"
+  apply (auto simp: distance_set_def image_def intro!:)
+  by (metis (mono_tags, lifting) Inf_lower One_nat_def dual_order.trans mem_Collect_eq vwalk_bet_dist)
+(*
 section \<open>Forests\<close>
 
 definition "forest G \<equiv> (\<forall>u v p p'. Vwalk.vwalk_bet G u p v \<and> Vwalk.vwalk_bet G u p' v \<longrightarrow> p = p')"
@@ -775,6 +780,6 @@ proof(goal_cases)
     by(auto dest: forest_subset intro!: forest_shortest_path)
   then show ?case
     by (metis (no_types, lifting) "1"(1) "1"(2) "1"(3) \<open>vwalk_bet G u p v\<close> distance_set_0 distance_set_shortest_path reachable_in_dVs(1) vwalk_bet_endpoints(2) vwalk_bet_subset)
-qed
+qed*)
   
 end

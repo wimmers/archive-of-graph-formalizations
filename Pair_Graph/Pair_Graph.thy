@@ -155,12 +155,15 @@ lemma in_neighbourhood_dVs[simp, intro]:
   "v \<in> neighbourhood G u \<Longrightarrow> v \<in> dVs G"
   by auto
 
+lemma subset_neighbourhood_dVs[simp, intro]:
+  "neighbourhood G u \<subseteq> dVs G"
+  by auto
+
 lemma in_dVsE: "v \<in> dVs G \<Longrightarrow> \<lbrakk>(\<And>u. (u, v) \<in> G \<Longrightarrow> P); (\<And>u. (v, u) \<in> G \<Longrightarrow> P)\<rbrakk> \<Longrightarrow> P"
                "v \<notin> dVs G \<Longrightarrow> (\<lbrakk>(\<And>u. (u, v) \<notin> G); (\<And>u. (v, u) \<notin> G)\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
   by (auto simp: dVs_def)
 
 lemma neighoubrhood_union[simp]: "neighbourhood (G \<union> G') u = neighbourhood G u \<union> neighbourhood G' u"
   by (auto simp: neighbourhood_def)
-
 
 end
