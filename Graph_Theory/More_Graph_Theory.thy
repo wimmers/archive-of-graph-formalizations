@@ -1,3 +1,7 @@
+(* Author: Lukas Stevens *)
+
+(* TODO: Add to Noschinski's AFP entry *)
+
 section \<open>Additions to Lars Noschinski's Graph Library\<close>
 theory More_Graph_Theory
   imports "Graph_Theory.Graph_Theory"

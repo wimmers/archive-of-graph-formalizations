@@ -1,0 +1,19 @@
+
+For the documents:
+ - Create one theory file for all findings
+ - Copy Pair_Graph/Findings_Pair_Graph.thy to the new thy file
+ - Recover the tag 'doc' findings thy and copy it to the new thy file
+ - Copy the Adaptors/Summary.thy to the new thy file
+ - Add sections and structure as needed
+ - Add sections to fix the overall generated document
+
+
+Final project document stucture (w/o proofs):
+ 1- Findings
+ 2- Summaries
+ 3- Representations
+ 4- Adaptors
+ 
+Proofs:
+ - grep for smt/metis calls and fix them
+ 

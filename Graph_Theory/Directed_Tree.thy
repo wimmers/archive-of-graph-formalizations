@@ -1,3 +1,5 @@
+(* Author: Lukas Stevens *)
+
 theory Directed_Tree
   imports "Graph_Theory.Graph_Theory" More_Graph_Theory
 begin
@@ -198,7 +200,7 @@ lemma in_degree_root_zero: "in_degree T root = 0"
 proof(rule ccontr)
   assume "in_degree T root \<noteq> 0"
   then obtain e u where e: "tail T e = u" "head T e = root" "u \<in> verts T" "e \<in> arcs T"
-    by (metis tail_in_verts all_not_in_conv card_empty in_degree_def in_in_arcs_conv)
+    by (metis tail_in_verts all_not_in_conv card.empty in_degree_def in_in_arcs_conv)
   with unique_awalk obtain p where p: "awalk root p u" by blast
   with e have "awalk root (p@[e]) root"
     using awalk_appendI arc_implies_awalk by auto

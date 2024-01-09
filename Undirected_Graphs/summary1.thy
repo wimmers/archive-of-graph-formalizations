@@ -96,3 +96,5 @@ thm walk_subset
 thm induct_walk_betw
 
 section \<open>Connected components\<close>
+
+end
