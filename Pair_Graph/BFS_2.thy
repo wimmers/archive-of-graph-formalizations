@@ -1,729 +1,6 @@
 theory BFS_2
-  imports Pair_Graph_Specs "HOL-Eisbach.Eisbach_Tools" "Dist"
+  imports Pair_Graph_Specs "HOL-Eisbach.Eisbach_Tools" "Dist" Set2_Addons
 begin
-
-record ('parents, 'neighb) BFS_state = parents:: "'parents" current:: "'neighb" visited:: "'neighb"
-
-locale BFS =
-  Graph: Pair_Graph_Specs
-    where lookup = lookup +
-  set_ops: Set2 neighb_empty neighb_delete _ t_set neighb_inv neighb_insert
-  
-for lookup :: "'adj \<Rightarrow> 'ver \<Rightarrow> 'neighb option" +
-
-fixes  
-srcs::"'neighb" and
-G::"'adj" and expand_tree::"'adj \<Rightarrow> 'neighb \<Rightarrow> 'neighb \<Rightarrow> 'adj" and
-next_frontier::"'neighb \<Rightarrow> 'neighb \<Rightarrow> 'neighb" 
-
-
-assumes
-   graph_inv[simp]:
-     "Graph.graph_inv G" 
-     "Graph.finite_graph G"
-     "Graph.finite_neighbs" and
-
-   srcs_invar[simp]:
-     "t_set srcs \<noteq> {}" 
-     "neighb_inv srcs" and
-   expand_tree[simp]:
-     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow> 
-       Graph.graph_inv (expand_tree BFS_tree frontier vis)"
-     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow>
-        Graph.digraph_abs (expand_tree BFS_tree frontier vis) = 
-         (Graph.digraph_abs BFS_tree) \<union> 
-         {(u,v) | u v. u \<in> t_set (frontier) \<and> 
-                       v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u -
-                       t_set vis)}" and
-   next_frontier[simp]:
-    "\<lbrakk>neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow>  neighb_inv (next_frontier frontier vis)"
-    "\<lbrakk>neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow>
-       t_set (next_frontier frontier vis) =
-         (\<Union> {Pair_Graph.neighbourhood (Graph.digraph_abs G) u | u . u \<in> t_set frontier}) - t_set vis" and
-   finite_neighb:
-     "finite (Pair_Graph.neighbourhood (Graph.digraph_abs G) u)" and
-   srcs_in_G[simp,intro]: "t_set srcs \<subseteq> dVs (Graph.digraph_abs G)"
-
-begin
-
-abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G" 
-notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
-
-notation "inter" (infixl "\<inter>\<^sub>G" 100)
-
-notation "diff" (infixl "-\<^sub>G" 100)
-
-notation "union" (infixl "\<union>\<^sub>G" 100)
-
-declare set_ops.set_union[simp] set_ops.set_inter[simp] set_ops.set_diff[simp] set_ops.invar_union[simp]
-        set_ops.invar_inter[simp] set_ops.invar_diff[simp]
-
-
-function (domintros) BFS::"('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neighb) BFS_state" where
-  "BFS BFS_state = 
-     (
-        if current BFS_state \<noteq> \<emptyset>\<^sub>N then
-          let
-            visited' = visited BFS_state \<union>\<^sub>G current BFS_state;
-            parents' = expand_tree (parents BFS_state) (current BFS_state) visited';
-            current' = next_frontier (current BFS_state) visited'
-          in 
-            BFS (BFS_state \<lparr>parents:= parents', visited := visited', current := current'\<rparr>)
-         else
-          BFS_state)"
-  by pat_completeness auto
-
-named_theorems call_cond_elims
-named_theorems call_cond_intros
-named_theorems ret_holds_intros
-named_theorems invar_props_intros
-named_theorems invar_props_elims
-named_theorems invar_holds_intros
-named_theorems state_rel_intros
-named_theorems state_rel_holds_intros
-
-definition "BFS_call_1_conds bfs_state \<equiv> (current bfs_state) \<noteq> \<emptyset>\<^sub>N"
-
-lemma DFS_call_1_conds[call_cond_elims]: 
-  "BFS_call_1_conds bfs_state \<Longrightarrow> 
-   \<lbrakk>(current bfs_state) \<noteq> \<emptyset>\<^sub>N \<Longrightarrow> P\<rbrakk>
-   \<Longrightarrow> P"
-  by(auto simp: BFS_call_1_conds_def split: list.splits option.splits if_splits)
-
-
-definition "BFS_upd1 BFS_state \<equiv>
-(        let
-          visited' = visited BFS_state \<union>\<^sub>G current BFS_state;
-          parents' = expand_tree (parents BFS_state) (current BFS_state) visited';
-          current' =  next_frontier (current BFS_state) visited'
-        in 
-          BFS_state \<lparr>parents:= parents', visited := visited', current := current'\<rparr>
-
-)" 
-
-
-definition "BFS_ret_1_conds bfs_state \<equiv>
-    (current bfs_state) = \<emptyset>\<^sub>N"
-
-lemma BFS_ret_1_conds[call_cond_elims]:
-  "BFS_ret_1_conds bfs_state \<Longrightarrow> 
-   \<lbrakk>(current bfs_state) = \<emptyset>\<^sub>N \<Longrightarrow> P\<rbrakk>
-   \<Longrightarrow> P"
-  by(auto simp: BFS_ret_1_conds_def split: list.splits option.splits if_splits)
-
-lemma BFS_ret_1_condsI[call_cond_intros]:
-  "\<lbrakk>(current bfs_state) = \<emptyset>\<^sub>N\<rbrakk> \<Longrightarrow> BFS_ret_1_conds bfs_state"
-  by(auto simp: BFS_ret_1_conds_def split: list.splits option.splits if_splits)
-
-abbreviation "BFS_ret1 bfs_state \<equiv> bfs_state"
-
-lemma BFS_cases:
-  assumes "BFS_call_1_conds bfs_state \<Longrightarrow> P"
-      "BFS_ret_1_conds bfs_state \<Longrightarrow> P"
-  shows "P"
-proof-
-  have "BFS_call_1_conds bfs_state \<or>
-        BFS_ret_1_conds bfs_state"
-    by (auto simp add: BFS_call_1_conds_def
-                        BFS_ret_1_conds_def
-           split: list.split_asm option.split_asm if_splits)
-  then show ?thesis
-    using assms
-    by auto
-qed
-
-lemma BFS_simps:
-  assumes "BFS_dom BFS_state" 
-  shows"BFS_call_1_conds BFS_state \<Longrightarrow> BFS BFS_state = BFS (BFS_upd1 BFS_state)"
-      "BFS_ret_1_conds BFS_state \<Longrightarrow> BFS BFS_state = BFS_ret1 BFS_state"
-  by (auto simp add: BFS.psimps[OF assms]
-                     BFS_call_1_conds_def BFS_upd1_def 
-                     BFS_ret_1_conds_def Let_def
-            split: list.splits option.splits if_splits)
-
-lemma BFS_induct: 
-  assumes "BFS_dom bfs_state"
-  assumes "\<And>bfs_state. \<lbrakk>BFS_dom bfs_state;
-                        (BFS_call_1_conds bfs_state \<Longrightarrow> P (BFS_upd1 bfs_state))\<rbrakk>
-              \<Longrightarrow> P bfs_state"
-  shows "P bfs_state"
-  apply(rule BFS.pinduct)
-  subgoal using assms(1) .
-  apply(rule assms(2))
-  by (auto simp add: BFS_call_1_conds_def BFS_upd1_def Let_def
-           split: list.splits option.splits if_splits)
-
-lemma BFS_domintros: 
-  assumes "BFS_call_1_conds BFS_state \<Longrightarrow> BFS_dom (BFS_upd1 BFS_state)"
-  shows "BFS_dom BFS_state"
-proof(rule BFS.domintros, goal_cases)
-  case (1)
-  then show ?case
-    using assms(1)[simplified BFS_call_1_conds_def BFS_upd1_def]
-    by (force simp: Let_def split: list.splits option.splits if_splits)
-qed
-
-definition "invar_1 bfs_state \<equiv>
-              neighb_inv (visited bfs_state) \<and> neighb_inv (current bfs_state) \<and>
-              Graph.graph_inv (parents bfs_state) \<and> 
-              finite (t_set (current bfs_state)) \<and> finite (t_set (visited bfs_state))"
-
-lemma invar_1_props[invar_props_elims]: 
-  "invar_1 bfs_state \<Longrightarrow> 
-  (\<lbrakk>neighb_inv (visited bfs_state) ; neighb_inv (current bfs_state) ;
-    Graph.graph_inv (parents bfs_state); 
-    finite (t_set (current bfs_state)); finite (t_set (visited bfs_state))\<rbrakk> \<Longrightarrow> P)
-     \<Longrightarrow> P"
-  by (auto simp: invar_1_def)
-
-lemma invar_1_intro[invar_props_intros]:
-  "\<lbrakk>neighb_inv (visited bfs_state); neighb_inv (current bfs_state);
-    Graph.graph_inv (parents bfs_state);
-    finite (t_set (current bfs_state)); finite (t_set (visited bfs_state))\<rbrakk> 
-    \<Longrightarrow> invar_1 bfs_state"
-  by (auto simp: invar_1_def)
-
-lemma finite_simp:
-   "{(u,v). u \<in> front \<and> v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u) \<and> v \<notin> vis} = 
-       {(u,v). u \<in> front} \<inter> {(u,v). v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u)} - {(u,v) . v \<in> vis}"
-   "finite {(u, v)| v . v \<in> (s u)} = finite (s u)"
-  using finite_image_iff[where f = snd and A = "{(u, v) |v. v \<in> s u}"]
-  by (auto simp: inj_on_def image_def)
-  
-lemma invar_1_holds_upd1[invar_holds_intros]:
-  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state\<rbrakk> \<Longrightarrow> invar_1 (BFS_upd1 bfs_state)"
-  using finite_neighb
-  by(auto elim!: invar_1_props call_cond_elims simp: Let_def BFS_upd1_def BFS_call_1_conds_def intro!: invar_props_intros)+
-
-lemma invar_1_holds_4[invar_holds_intros]:
-  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_1 bfs_state\<rbrakk> \<Longrightarrow> invar_1 (BFS_ret1 bfs_state)"
-  by (auto simp: intro: invar_props_intros)
-
-lemma invar_1_holds[invar_holds_intros]:
-   assumes "BFS_dom bfs_state" "invar_1 bfs_state"
-   shows "invar_1 (BFS bfs_state)"
-  using assms(2-)
-proof(induction rule: BFS_induct[OF assms(1)])
-  case IH: (1 bfs_state)
-  show ?case
-    apply(rule BFS_cases[where bfs_state = bfs_state])
-    by (auto intro!: IH(2-) intro: invar_holds_intros  simp: BFS_simps[OF IH(1)])
-qed
-
-definition "invar_2 bfs_state \<equiv> 
-  Graph.digraph_abs (parents bfs_state) \<subseteq> Graph.digraph_abs G \<and> 
-  t_set (visited bfs_state) \<subseteq> dVs (Graph.digraph_abs G) \<and> 
-  t_set (current bfs_state) \<subseteq> dVs (Graph.digraph_abs G) \<and> 
-  dVs (Graph.digraph_abs (parents bfs_state)) \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state) \<and>
-  \<comment>\<open>t_set (current bfs_state) \<subseteq> t_set (visited bfs_state) \<and> \<close>
-  t_set srcs \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
-
-lemma invar_2_props[invar_props_elims]: 
-  "invar_2 bfs_state \<Longrightarrow> 
-  (\<lbrakk>Graph.digraph_abs (parents bfs_state) \<subseteq> Graph.digraph_abs G;
-    t_set (visited bfs_state) \<subseteq> dVs (Graph.digraph_abs G);
-    t_set (current bfs_state) \<subseteq> dVs (Graph.digraph_abs G);
-    dVs (Graph.digraph_abs (parents bfs_state)) \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state);
-    \<comment>\<open>t_set (current bfs_state) \<subseteq> t_set (visited bfs_state);\<close>
-    t_set srcs \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> P)
-     \<Longrightarrow> P"
-  by (auto simp: invar_2_def)
-
-lemma invar_2_intro[invar_props_intros]:
-   "\<lbrakk>Graph.digraph_abs (parents bfs_state) \<subseteq> Graph.digraph_abs G;
-     t_set (visited bfs_state) \<subseteq> dVs (Graph.digraph_abs G);
-     t_set (current bfs_state) \<subseteq> dVs (Graph.digraph_abs G);
-     dVs (Graph.digraph_abs (parents bfs_state)) \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state);
-     \<comment>\<open>t_set (current bfs_state) \<subseteq> t_set (visited bfs_state);\<close>
-     t_set srcs \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk>
-     \<Longrightarrow> invar_2 bfs_state"
-  by (auto simp: invar_2_def)
-
-lemma invar_2_holds_upd1[invar_holds_intros]: 
-  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state\<rbrakk> \<Longrightarrow> invar_2 (BFS_upd1 bfs_state)"
-  apply(auto elim!: call_cond_elims invar_1_props invar_2_props intro!: invar_props_intros simp: BFS_upd1_def Let_def)
-  apply(auto simp: dVs_def)
-  apply (metis Un_iff dVsI(1) dVs_def in_mono)
-  by (metis Un_iff dVsI(2) dVs_def in_mono)
-
-lemma invar_2_holds_4[invar_holds_intros]:
-  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_2 bfs_state\<rbrakk> \<Longrightarrow> invar_2 (BFS_ret1 bfs_state)"
-  by (auto simp: intro: invar_props_intros)
-
-lemma invar_2_holds[invar_holds_intros]:
-   assumes "BFS_dom bfs_state" "invar_1 bfs_state" "invar_2 bfs_state"
-   shows "invar_2 (BFS bfs_state)"
-  using assms(2-)
-proof(induction rule: BFS_induct[OF assms(1)])
-  case IH: (1 bfs_state)
-  show ?case
-    apply(rule BFS_cases[where bfs_state = bfs_state])
-    by (auto intro!: IH(2-) intro: invar_holds_intros  simp: BFS_simps[OF IH(1)])
-qed
-
-\<comment> \<open>This is invar\_100 on the board\<close>
-
-definition "invar_3_1 bfs_state \<equiv> 
-  (\<forall>v\<in>t_set (current bfs_state). \<forall>u. u \<in> t_set (current bfs_state) \<longleftrightarrow> 
-      distance_set (Graph.digraph_abs G) (t_set srcs) v =
-                           distance_set (Graph.digraph_abs G) (t_set srcs) u)"
-
-lemma invar_3_1_props[invar_props_elims]: 
-  "invar_3_1 bfs_state \<Longrightarrow>
-  (\<lbrakk>\<lbrakk>v \<in> t_set (current bfs_state); u \<in> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
-            distance_set (Graph.digraph_abs G) (t_set srcs) v =
-                 distance_set (Graph.digraph_abs G) (t_set srcs) u;
-    \<lbrakk>v \<in> t_set (current bfs_state);
-            distance_set (Graph.digraph_abs G) (t_set srcs) v = 
-              distance_set (Graph.digraph_abs G) (t_set srcs) u\<rbrakk> \<Longrightarrow>
-            u \<in> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> P)
-     \<Longrightarrow> P"
-  unfolding invar_3_1_def
-  by blast
-
-lemma invar_3_1_intro[invar_props_intros]:
-   "\<lbrakk>\<And>u v. \<lbrakk>v \<in> t_set (current bfs_state); u \<in> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
-            distance_set (Graph.digraph_abs G) (t_set srcs) v =
-                           distance_set (Graph.digraph_abs G) (t_set srcs) u;
-     \<And>u v. \<lbrakk>v \<in> t_set (current bfs_state); distance_set (Graph.digraph_abs G) (t_set srcs) v =
-                 distance_set (Graph.digraph_abs G) (t_set srcs) u\<rbrakk> \<Longrightarrow>
-            u \<in> t_set (current bfs_state)\<rbrakk>
-    \<Longrightarrow> invar_3_1 bfs_state"
-  unfolding invar_3_1_def
-  by blast
-
-
-
-definition "invar_3_2 bfs_state \<equiv> 
-  (\<forall>v\<in>t_set (current bfs_state). \<forall>u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state).
-     distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
-       distance_set (Graph.digraph_abs G) (t_set srcs) v)"
-
-lemma invar_3_2_props[elim]: 
-  "invar_3_2 bfs_state \<Longrightarrow> 
-  (\<lbrakk>\<And>v u. \<lbrakk>v\<in>t_set (current bfs_state); u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
-          distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
-       distance_set (Graph.digraph_abs G) (t_set srcs) v\<rbrakk> \<Longrightarrow> P)
-     \<Longrightarrow> P"
-  unfolding invar_3_2_def
-  by blast
-
-lemma invar_3_2_intro[invar_props_intros]:
-   "\<lbrakk>\<And>v u. \<lbrakk>v\<in>t_set (current bfs_state); u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
-          distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
-       distance_set (Graph.digraph_abs G) (t_set srcs) v\<rbrakk>
-    \<Longrightarrow> invar_3_2 bfs_state"
-  unfolding invar_3_2_def
-  by blast
-
-definition "invar_3_3 bfs_state \<equiv> 
-  (\<forall>v\<in>t_set (visited bfs_state).
-     neighbourhood (Graph.digraph_abs G) v \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state))"
-
-lemma invar_3_3_props[invar_props_elims]: 
-  "invar_3_3 bfs_state \<Longrightarrow> 
-  (\<lbrakk>\<And>v. \<lbrakk>v \<in> t_set (visited bfs_state)\<rbrakk> \<Longrightarrow>
-          neighbourhood (Graph.digraph_abs G) v \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> P)
-     \<Longrightarrow> P"
-  unfolding invar_3_3_def
-  by blast
-
-lemma invar_3_3_intro[invar_props_intros]:
-   "\<lbrakk>\<And>v. \<lbrakk>v \<in> t_set (visited bfs_state)\<rbrakk> \<Longrightarrow>
-          neighbourhood (Graph.digraph_abs G) v \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk>
-    \<Longrightarrow> invar_3_3 bfs_state"
-  unfolding invar_3_3_def
-  by blast
-
-\<comment> \<open>This is invar 4 on the board\<close>
-
-definition "invar_3_4 bfs_state \<equiv> 
-  (\<forall>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state).
-     \<forall>u. distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
-           distance_set (Graph.digraph_abs G) (t_set srcs) v
-             \<longrightarrow> u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state))"
-
-lemma invar_3_4_props[invar_props_elims]: 
-  "invar_3_4 bfs_state \<Longrightarrow> 
-  (\<lbrakk>\<And>u v. \<lbrakk>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state);
-             distance_set (Graph.digraph_abs G) (t_set srcs) u \<le> distance_set (Graph.digraph_abs G) (t_set srcs) v\<rbrakk> \<Longrightarrow>
-            u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> P)
-     \<Longrightarrow> P"
-  unfolding invar_3_4_def
-  by blast
-
-lemma invar_3_4_intro[invar_props_intros]:
-   "\<lbrakk>\<And>u v. \<lbrakk>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state);
-               distance_set (Graph.digraph_abs G) (t_set srcs) u \<le> distance_set (Graph.digraph_abs G) (t_set srcs) v\<rbrakk> \<Longrightarrow>
-            u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk>
-    \<Longrightarrow> invar_3_4 bfs_state"
-  unfolding invar_3_4_def
-  by blast
-
-definition "invar_current_reachable bfs_state \<equiv> 
-  (\<forall>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state).
-     distance_set (Graph.digraph_abs G) (t_set srcs) v < \<infinity>)"
-
-lemma invar_current_reachable_props[invar_props_elims]: 
-  "invar_current_reachable bfs_state \<Longrightarrow> 
-  (\<lbrakk>\<And>v. \<lbrakk>v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> 
-         distance_set (Graph.digraph_abs G) (t_set srcs) v < \<infinity>\<rbrakk> \<Longrightarrow> P)
-     \<Longrightarrow> P"
-  by(auto simp: invar_current_reachable_def)
-
-lemma invar_current_reachable_intro[invar_props_intros]:
-   "\<lbrakk>\<And>v. \<lbrakk>v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
-         distance_set (Graph.digraph_abs G) (t_set srcs) v < \<infinity>\<rbrakk> 
-    \<Longrightarrow> invar_current_reachable bfs_state"
-  by(auto simp add: invar_current_reachable_def)
-
-lemma invar_current_reachable_holds_upd1[invar_holds_intros]: 
-  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state; invar_current_reachable bfs_state\<rbrakk>
-     \<Longrightarrow> invar_current_reachable (BFS_upd1 bfs_state)"
-proof(rule invar_props_intros, goal_cases)
-  case assms: (1 v)
-  have ?case (is "?dist v < \<infinity>") if "v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
-  proof-
-    have "v \<in> t_set (current (BFS_upd1 bfs_state))"
-      using that assms
-      by (auto simp: BFS_upd1_def Let_def elim: invar_props_elims)
-    then obtain u where "v \<in> t_set (\<N>\<^sub>G u)" "u \<in> t_set (current bfs_state)"
-      using assms
-      by (auto simp: BFS_upd1_def Let_def elim!: invar_props_elims)
-    hence "?dist u < \<infinity>"
-      using \<open>invar_2 bfs_state\<close> \<open>invar_current_reachable bfs_state\<close>
-      by (auto elim!: invar_props_elims)
-    hence "?dist v \<le> ?dist u + 1"
-      using \<open>v \<in> t_set (\<N>\<^sub>G u)\<close>
-      by (auto intro!: distance_set_neighbourhood)
-    thus ?thesis
-      using add_mono1[OF \<open>?dist u < \<infinity>\<close>] linorder_not_less
-      by fastforce
-  qed
-  thus ?case
-    using assms
-    by(force elim!: call_cond_elims invar_props_elims intro!: invar_props_intros simp: BFS_upd1_def Let_def)
-qed
-
-lemma invar_current_reachable_holds_4[invar_holds_intros]:
-  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_current_reachable bfs_state\<rbrakk> \<Longrightarrow> invar_current_reachable (BFS_ret1 bfs_state)"
-  by (auto simp: intro: invar_props_intros)
-
-lemma dist_current_plus_1_new:                                               
-  assumes
-    "invar_1 bfs_state" "invar_2 bfs_state" "invar_3_4 bfs_state" 
-    "v \<in> neighbourhood (Graph.digraph_abs G) v'" 
-    "v' \<in> t_set (current bfs_state)"
-    "v \<in> t_set (current (BFS_upd1 bfs_state))"
-  shows  "distance_set (Graph.digraph_abs G) (t_set srcs) v = 
-            distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1" (is "?dv = ?dv' + 1")
-  proof-
-    have False if "?dv > ?dv' + 1"
-      using distance_set_neighbourhood[OF \<open>v \<in> neighbourhood (Graph.digraph_abs G) v'\<close>] that
-      by (simp add: leD)
-
-
-    moreover have False if "?dv < ?dv' + 1"
-    proof-
-      have "?dv \<le> ?dv'"
-        using that eSuc_plus_1 ileI1
-        by force
-      moreover have "?dv \<noteq> \<infinity>"
-        using that enat_ord_simps(4) 
-        by fastforce
-      moreover have "v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
-        using assms
-        by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props invar_2_props)
-        
-      moreover have "v' \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
-        using \<open>v' \<in> t_set (current bfs_state)\<close> \<open>invar_2 bfs_state\<close>
-        by (auto elim!: invar_2_props)
-
-      ultimately show False
-        using \<open>invar_3_4 bfs_state\<close>
-        apply(elim invar_props_elims)
-        apply(drule dist_set_not_inf)
-        using dual_order.trans dist_set_mem
-        by (smt (verit, best))
-    qed
-    ultimately show ?thesis
-      by force
-  qed
-
-lemma plus_lt_enat: "\<lbrakk>(a::enat) \<noteq> \<infinity>; b < c\<rbrakk> \<Longrightarrow> a + b < a + c"
-  using enat_add_left_cancel_less
-  by presburger
-
-lemma plus_one_side_lt_enat: "\<lbrakk>(a::enat) \<noteq> \<infinity>; 0 < b\<rbrakk> \<Longrightarrow> a < a + b"
-  using plus_lt_enat
-  by auto
-
-lemma invar_3_1_holds_upd1_new[invar_holds_intros]: 
-  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state ; invar_3_1 bfs_state;
-    invar_3_2 bfs_state; invar_3_4 bfs_state; invar_current_reachable bfs_state\<rbrakk>
-     \<Longrightarrow> invar_3_1 (BFS_upd1 bfs_state)"
-proof(intro invar_props_intros, goal_cases)
-  case assms: (1 u v)
-  obtain u' v' where
-    uv'[intro]: "u \<in> neighbourhood (Graph.digraph_abs G) u'" "u' \<in> t_set (current bfs_state)" 
-                "v \<in> neighbourhood (Graph.digraph_abs G) v'" "v' \<in> t_set (current bfs_state)"
-    using assms(1,2,8,9)    
-    by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props)
-  moreover hence "distance_set (Graph.digraph_abs G) (t_set srcs) v' =
-                    distance_set (Graph.digraph_abs G) (t_set srcs) u'" (is "?d v' = ?d u'")
-    using \<open>invar_3_1 bfs_state\<close>
-    by (auto elim: invar_props_elims)
-  moreover have "distance_set (Graph.digraph_abs G) (t_set srcs) v = ?d v' + 1"
-    using assms               
-    by (auto intro!: dist_current_plus_1_new)
-  moreover have "distance_set (Graph.digraph_abs G) (t_set srcs) u = ?d u' + 1"
-    using assms
-    by (auto intro!: dist_current_plus_1_new)
-  ultimately show ?case
-    by auto
-next
-  case (2 u v)
-  then obtain v' where uv'[intro]:
-    "v \<in> neighbourhood (Graph.digraph_abs G) v'" "v' \<in> t_set (current bfs_state)"    
-    by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props invar_2_props)
-  hence "distance_set (Graph.digraph_abs G) (t_set srcs) v = 
-           distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1" (is "?d v = ?d v' + _")
-    using 2
-    by(fastforce intro!: dist_current_plus_1_new)
-
-  show ?case
-  proof(cases "0 < ?d u")
-    case in_srcs: True
-    moreover have "?d v' < \<infinity>"
-      using \<open>?d v = ?d u\<close> \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close> \<open>v' \<in> t_set (current bfs_state)\<close>
-            \<open>invar_current_reachable bfs_state\<close>
-      by (auto elim!: invar_1_props invar_2_props invar_current_reachable_props)
-    hence "?d v < \<infinity>"
-      using \<open>?d v = ?d v' + 1\<close>
-      by (simp add: plus_eq_infty_iff_enat)
-    hence "?d u < \<infinity>"
-      using \<open>?d v = ?d u\<close>
-      by auto
-    ultimately obtain u' where "?d u' + 1 = ?d u" "u \<in> neighbourhood (Graph.digraph_abs G) u'"
-      using distance_set_parent'
-      by (metis srcs_invar(1))
-    hence "?d u' = ?d v'"
-      using \<open>?d v = ?d v' + 1\<close> \<open>?d v = ?d u\<close>
-      by auto
-    hence "u' \<in> t_set (current bfs_state)"
-      using \<open>invar_3_1 bfs_state\<close>
-            \<open>v' \<in> t_set (current bfs_state)\<close>
-      by (auto elim!: invar_3_1_props)
-    moreover have "?d u' < ?d u"
-      using \<open>?d u < \<infinity>\<close> 
-      using zero_less_one not_infinity_eq 
-      by (fastforce intro!: plus_one_side_lt_enat simp: \<open>?d u' + 1 = ?d u\<close>[symmetric])
-    hence "u \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
-      using \<open>invar_3_2 bfs_state\<close> \<open>u' \<in> t_set (current bfs_state)\<close> 
-      by (auto elim!: invar_3_2_props dest: leD)
-    ultimately show ?thesis
-      using \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close> \<open>u \<in> neighbourhood (Graph.digraph_abs G) u'\<close>
-      apply(auto simp: BFS_upd1_def Let_def elim!: invar_1_props invar_2_props)
-      by blast
-  next
-    case not_in_srcs: False
-    text \<open>Contradiction because if \<open>u \<in> srcs\<close> then distance srcs to a vertex in srcs is > 0. This is
-          because the distance from srcs to \<open>u\<close> is the same as that to \<open>v\<close>.\<close>
-    then show ?thesis
-      using \<open>?d v = ?d u\<close> \<open>?d v = ?d v' + 1\<close>
-      by auto
-  qed
-qed
-
-lemma invar_3_1_holds_4[invar_holds_intros]:
-  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_3 bfs_state\<rbrakk> \<Longrightarrow> invar_3_3 (BFS_ret1 bfs_state)"
-  by (auto simp: intro: invar_props_intros)
-
-lemma invar_3_2_holds_upd1_new[invar_holds_intros]: 
-  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state ; invar_3_1 bfs_state; 
-    invar_3_2 bfs_state; invar_3_4 bfs_state; invar_current_reachable bfs_state\<rbrakk>
-   \<Longrightarrow> invar_3_2 (BFS_upd1 bfs_state)"
-proof(intro invar_props_intros, goal_cases)                                                                          
-  case assms: (1 u v)
-  show ?case
-  proof(cases "v \<in> t_set (current (BFS_upd1 bfs_state))")
-    case v_in_current: True
-    moreover have "invar_3_1 (BFS_upd1 bfs_state)"
-      using assms
-      by (auto intro: invar_holds_intros)
-    ultimately show ?thesis
-      using \<open>u \<in> t_set (current (BFS_upd1 bfs_state))\<close>
-      by (fastforce elim: invar_props_elims)
-  next                     
-    case v_not_in_current: False
-    hence "v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
-      using assms(1,2,9)
-      by (fastforce simp: BFS_upd1_def Let_def elim!: invar_1_props)
-    moreover obtain u' where uv'[intro]: "u \<in> neighbourhood (Graph.digraph_abs G) u'" "u' \<in> t_set (current bfs_state)" 
-      using assms(1,2,8,9)    
-      by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props)
-    ultimately have "distance_set (Graph.digraph_abs G) (t_set srcs) v \<le>
-                       distance_set (Graph.digraph_abs G) (t_set srcs) u'"
-      using \<open>invar_3_2 bfs_state\<close>
-      by (auto elim!: invar_3_2_props)
-    moreover have "distance_set (Graph.digraph_abs G) (t_set srcs) u = 
-           distance_set (Graph.digraph_abs G) (t_set srcs) u' + 1" (is "?d u = ?d u' + _")
-      using assms
-      by(fastforce intro!: dist_current_plus_1_new)
-    ultimately show ?thesis
-      by (metis le_iff_add order.trans)
-  qed
-qed
-
-lemma invar_3_2_holds_4[invar_holds_intros]:
-  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_3 bfs_state\<rbrakk> \<Longrightarrow> invar_3_3 (BFS_ret1 bfs_state)"
-  by (auto simp: intro: invar_props_intros)
-
-lemma invar_3_3_holds_upd1[invar_holds_intros]: 
-  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state; invar_3_3 bfs_state\<rbrakk> \<Longrightarrow> invar_3_3 (BFS_upd1 bfs_state)"
-  by(fastforce elim!: call_cond_elims invar_1_props invar_2_props invar_3_3_props intro!: invar_props_intros simp: BFS_upd1_def Let_def)
-
-lemma invar_3_3_holds_4[invar_holds_intros]:
-  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_3 bfs_state\<rbrakk> \<Longrightarrow> invar_3_3 (BFS_ret1 bfs_state)"
-  by (auto simp: intro: invar_props_intros)
-
-lemma invar_3_4_holds_upd1[invar_holds_intros]: 
-  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state;
-    invar_3_1 bfs_state; invar_3_2 bfs_state; invar_3_3 bfs_state; invar_3_4 bfs_state;
-    invar_current_reachable bfs_state\<rbrakk> \<Longrightarrow> 
-    invar_3_4 (BFS_upd1 bfs_state)"
-proof(intro invar_props_intros, goal_cases)                                                                                                    
-  case assms: (1 u v)
-  show ?case
-  proof(cases \<open>v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<close>)
-    case v_visited: True
-    hence "u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
-      using \<open>invar_3_4 bfs_state\<close> assms
-      by (auto elim!: invar_3_4_props)
-    then show ?thesis 
-      using \<open>invar_1 bfs_state\<close> \<open>v \<in> t_set (visited (BFS_upd1 bfs_state)) \<union> t_set (current (BFS_upd1 bfs_state))\<close>
-      by (auto simp: BFS_upd1_def Let_def elim: invar_props_elims)
-  next
-    case v_not_visited: False
-    hence "v \<in> t_set (current (BFS_upd1 bfs_state))"
-      using \<open>invar_1 bfs_state\<close> \<open>v \<in> t_set (visited (BFS_upd1 bfs_state)) \<union> t_set (current (BFS_upd1 bfs_state))\<close>
-      by (auto simp: BFS_upd1_def Let_def elim: invar_props_elims)
-    then obtain v' where v'[intro]:
-      "v \<in> neighbourhood (Graph.digraph_abs G) v'" "v' \<in> t_set (current bfs_state)"
-      using \<open>invar_1 bfs_state\<close>
-      by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props)
-    have "distance_set (Graph.digraph_abs G) (t_set srcs) v = 
-            distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1" (is "?dv = ?dv' + 1")
-      using assms \<open>v \<in> t_set (current (BFS_upd1 bfs_state))\<close>
-      by (auto intro!: dist_current_plus_1_new)
-    moreover have "u \<in> t_set (visited (BFS_upd1 bfs_state)) \<union> t_set (current (BFS_upd1 bfs_state))"
-      if "distance_set (Graph.digraph_abs G) (t_set srcs) u \<le> ?dv'" (is "?du \<le> ?dv'")
-      using that \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close> \<open>invar_3_4 bfs_state\<close> 
-      by (fastforce simp: BFS_upd1_def Let_def elim!: invar_1_props invar_2_props invar_3_4_props)
-    moreover have "u \<in> t_set (visited (BFS_upd1 bfs_state)) \<union> t_set (current (BFS_upd1 bfs_state))"
-      if "distance_set (Graph.digraph_abs G) (t_set srcs) u = ?dv"
-    proof-
-      have "invar_3_1 (BFS_upd1 bfs_state)"
-        by (auto intro: assms invar_holds_intros)
-      hence "u \<in> t_set (current (BFS_upd1 bfs_state))"
-        using that \<open>invar_3_1 bfs_state\<close> \<open>v \<in> t_set (current (BFS_upd1 bfs_state))\<close>
-        by (auto elim!: invar_3_1_props)
-      moreover have "invar_1 (BFS_upd1 bfs_state)" "invar_2 (BFS_upd1 bfs_state)"
-        using \<open>BFS_call_1_conds bfs_state\<close> \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close>
-        by(auto intro!: invar_1_holds_upd1 invar_2_holds_upd1)
-      ultimately show ?thesis
-        by (auto elim!: invar_props_elims)
-(*
-      then obtain u' where u'[intro]:
-        "u \<in> neighbourhood (Graph.digraph_abs G) u'"
-        "u' \<in> t_set (current bfs_state)"
-        using assms
-        by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props)
-      hence "distance_set (Graph.digraph_abs G) (t_set srcs) u = distance_set (Graph.digraph_abs G) (t_set srcs) u' + 1"
-        using assms(2,3,7) \<open>u \<in> t_set (current (BFS_upd1 bfs_state))\<close> dist_current_plus_1
-        by blast
-      hence "distance_set (Graph.digraph_abs G) (t_set srcs) u' \<le> distance_set (Graph.digraph_abs G) (t_set srcs) v'" (is "?du' \<le> _")
-        using that \<open>?dv = ?dv' +1\<close>
-        by auto
-      hence "u' \<in> t_set (visited bfs_state)"
-        using  assms(3) \<open>invar_3_4 bfs_state\<close>
-        by (force elim: invar_props_elims)
-      hence "u' \<in> t_set (current bfs_state) \<or> u' \<in> t_set (visited bfs_state) - t_set (current bfs_state)"
-        by auto
-      thus ?thesis
-      proof(elim disjE, goal_cases)
-        case 1
-        thus ?case
-          using \<open>u \<in> neighbourhood (Graph.digraph_abs G) u'\<close> \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close>
-          by (fastforce simp: BFS_upd1_def Let_def elim!: invar_1_props invar_2_props)
-      next
-        case 2
-        then show ?case
-          using \<open>u \<in> neighbourhood (Graph.digraph_abs G) u'\<close> \<open>invar_1 bfs_state\<close>
-            \<open>invar_3_3 bfs_state\<close>
-          by (fastforce simp: BFS_upd1_def Let_def)
-      qed*)
-    qed
-    ultimately show ?thesis
-      using \<open>?du \<le> ?dv\<close> ileI1 linorder_not_less plus_1_eSuc(2)
-      by fastforce
-  qed
-qed
-
-lemma invar_3_4_holds_4[invar_holds_intros]:
-  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_4 bfs_state\<rbrakk> \<Longrightarrow> invar_3_4 (BFS_ret1 bfs_state)"
-  by (auto simp: intro: invar_props_intros)
-
-definition "invar_dist' bfs_state \<equiv> 
-  (\<forall>v \<in> dVs (Graph.digraph_abs G) - t_set srcs.
-     (v \<in> (t_set (visited bfs_state) \<union> t_set (current bfs_state)) \<longrightarrow> distance_set (Graph.digraph_abs G) (t_set srcs) v =
-         distance_set (Graph.digraph_abs (parents bfs_state)) (t_set srcs) v))"
-                                      
-lemma invar_dist'_props[invar_props_elims]: 
-  "invar_dist' bfs_state \<Longrightarrow> v \<in> dVs (Graph.digraph_abs G) - t_set srcs \<Longrightarrow> 
-   \<lbrakk>
-     \<lbrakk>v \<in> (t_set (visited bfs_state) \<union> t_set (current bfs_state)) \<Longrightarrow> distance_set (Graph.digraph_abs G) (t_set srcs) v =
-         distance_set (Graph.digraph_abs (parents bfs_state)) (t_set srcs) v\<rbrakk> \<Longrightarrow> P
-   \<rbrakk>
-   \<Longrightarrow> P"
-  unfolding invar_dist'_def
-  by auto
-
-lemma invar_dist'_intro[invar_props_intros]:
-   "\<lbrakk>\<And>v. \<lbrakk>v \<in> dVs (Graph.digraph_abs G) - t_set srcs; v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> 
-           (distance_set (Graph.digraph_abs G) (t_set srcs) v =
-             distance_set (Graph.digraph_abs (parents bfs_state)) (t_set srcs) v)\<rbrakk>
-        
-    \<Longrightarrow> invar_dist' bfs_state"
-  unfolding invar_dist'_def
-  by auto
-
-definition "invar_goes_through_current bfs_state \<equiv> 
-         (\<forall>u\<in>t_set (visited bfs_state) \<union> t_set (current bfs_state). 
-            \<forall>v. v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state) \<longrightarrow>
-              (\<forall>p. Vwalk.vwalk_bet (Graph.digraph_abs G) u p v \<longrightarrow> 
-                     set p \<inter> t_set (current bfs_state) \<noteq> {}))"
-
-lemma invar_goes_through_current_props[invar_props_elims]: 
-  "invar_goes_through_current  bfs_state \<Longrightarrow> 
-   \<lbrakk>\<lbrakk>\<And>u v p. \<lbrakk>u \<in>t_set (visited bfs_state) \<union> t_set (current bfs_state);
-              v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state); 
-              Vwalk.vwalk_bet (Graph.digraph_abs G) u p v\<rbrakk>
-      \<Longrightarrow> set p \<inter> t_set (current bfs_state) \<noteq> {}\<rbrakk>
-     \<Longrightarrow> P\<rbrakk>
-   \<Longrightarrow> P"
-  unfolding invar_goes_through_current_def
-  by auto
-
-lemma invar_goes_through_current_intro[invar_props_intros]:
-  "\<lbrakk>\<And>u v p. \<lbrakk>u \<in>t_set (visited bfs_state) \<union> t_set (current bfs_state);
-             v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state); 
-              Vwalk.vwalk_bet (Graph.digraph_abs G) u p v\<rbrakk>
-      \<Longrightarrow> set p \<inter> t_set (current bfs_state) \<noteq> {}\<rbrakk>
-    \<Longrightarrow> invar_goes_through_current bfs_state"
-  unfolding invar_goes_through_current_def
-  by auto
-end text \<open>@{term BFS}\<close>
 
 lemma list_2_preds_aux:
   "\<lbrakk>x' \<in> set xs; P1 x'; \<And>xs1 x xs2. \<lbrakk>xs = xs1 @ [x] @ xs2; P1 x\<rbrakk> \<Longrightarrow>
@@ -871,8 +148,720 @@ qed
 lemma list_inter_mem_iff: "set xs \<inter> s \<noteq> {} \<longleftrightarrow> (\<exists>xs1 x xs2. xs = xs1 @ [x] @ xs2 \<and> x \<in> s)"
   by (metis append.left_neutral append_Cons disjoint_iff in_set_conv_decomp)
 
-context BFS 
+record ('parents, 'neighb) BFS_state = parents:: "'parents" current:: "'neighb" visited:: "'neighb"
+
+locale BFS =
+  Graph: Pair_Graph_Specs
+    where lookup = lookup +
+  set_ops: Set2 neighb_empty neighb_delete _ t_set neighb_inv insert
+  
+for lookup :: "'adj \<Rightarrow> 'ver \<Rightarrow> 'neighb option" +
+
+fixes  
+srcs::"'neighb" and
+G::"'adj" and expand_tree::"'adj \<Rightarrow> 'neighb \<Rightarrow> 'neighb \<Rightarrow> 'adj" and
+next_frontier::"'neighb \<Rightarrow> 'neighb \<Rightarrow> 'neighb" 
+
+
+assumes
+   expand_tree[simp]:
+     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow> 
+       Graph.graph_inv (expand_tree BFS_tree frontier vis)"
+     "\<lbrakk>Graph.graph_inv BFS_tree; neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow>
+        Graph.digraph_abs (expand_tree BFS_tree frontier vis) = 
+         (Graph.digraph_abs BFS_tree) \<union> 
+         {(u,v) | u v. u \<in> t_set (frontier) \<and> 
+                       v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u -
+                       t_set vis)}" and
+   next_frontier[simp]:
+    "\<lbrakk>neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow>  neighb_inv (next_frontier frontier vis)"
+    "\<lbrakk>neighb_inv frontier; neighb_inv vis\<rbrakk> \<Longrightarrow>
+       t_set (next_frontier frontier vis) =
+         (\<Union> {Pair_Graph.neighbourhood (Graph.digraph_abs G) u | u . u \<in> t_set frontier}) - t_set vis"
+
 begin
+
+definition "BFS_axiom \<longleftrightarrow>
+  Graph.graph_inv G \<and> Graph.finite_graph G \<and> Graph.finite_neighbs \<and>
+  t_set srcs \<subseteq> dVs (Graph.digraph_abs G) \<and>
+  (\<forall>u. finite (Pair_Graph.neighbourhood (Graph.digraph_abs G) u)) \<and>
+  t_set srcs \<noteq> {} \<and> neighb_inv srcs"
+
+abbreviation "neighbourhood' \<equiv> Graph.neighbourhood G" 
+notation "neighbourhood'" ("\<N>\<^sub>G _" 100)
+
+
+function (domintros) BFS::"('adj, 'neighb) BFS_state \<Rightarrow> ('adj, 'neighb) BFS_state" where
+  "BFS BFS_state = 
+     (
+        if current BFS_state \<noteq> \<emptyset>\<^sub>N then
+          let
+            visited' = visited BFS_state \<union>\<^sub>G current BFS_state;
+            parents' = expand_tree (parents BFS_state) (current BFS_state) visited';
+            current' = next_frontier (current BFS_state) visited'
+          in 
+            BFS (BFS_state \<lparr>parents:= parents', visited := visited', current := current'\<rparr>)
+         else
+          BFS_state)"
+  by pat_completeness auto
+
+
+definition "BFS_call_1_conds bfs_state \<equiv> (current bfs_state) \<noteq> \<emptyset>\<^sub>N"
+
+
+definition "BFS_upd1 BFS_state \<equiv>
+(        let
+          visited' = visited BFS_state \<union>\<^sub>G current BFS_state;
+          parents' = expand_tree (parents BFS_state) (current BFS_state) visited';
+          current' =  next_frontier (current BFS_state) visited'
+        in 
+          BFS_state \<lparr>parents:= parents', visited := visited', current := current'\<rparr>
+
+)" 
+
+
+definition "BFS_ret_1_conds bfs_state \<equiv>
+    (current bfs_state) = \<emptyset>\<^sub>N"
+
+abbreviation "BFS_ret1 bfs_state \<equiv> bfs_state"
+
+
+definition "invar_1 bfs_state \<equiv>
+              neighb_inv (visited bfs_state) \<and> neighb_inv (current bfs_state) \<and>
+              Graph.graph_inv (parents bfs_state) \<and> 
+              finite (t_set (current bfs_state)) \<and> finite (t_set (visited bfs_state))"
+
+definition "invar_2 bfs_state \<equiv> 
+  Graph.digraph_abs (parents bfs_state) \<subseteq> Graph.digraph_abs G \<and> 
+  t_set (visited bfs_state) \<subseteq> dVs (Graph.digraph_abs G) \<and> 
+  t_set (current bfs_state) \<subseteq> dVs (Graph.digraph_abs G) \<and> 
+  dVs (Graph.digraph_abs (parents bfs_state)) \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state) \<and>
+  t_set srcs \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
+
+definition "invar_3_1 bfs_state \<equiv> 
+  (\<forall>v\<in>t_set (current bfs_state). \<forall>u. u \<in> t_set (current bfs_state) \<longleftrightarrow> 
+      distance_set (Graph.digraph_abs G) (t_set srcs) v =
+                           distance_set (Graph.digraph_abs G) (t_set srcs) u)"
+
+definition "invar_3_2 bfs_state \<equiv> 
+  (\<forall>v\<in>t_set (current bfs_state). \<forall>u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state).
+     distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
+       distance_set (Graph.digraph_abs G) (t_set srcs) v)"
+
+definition "invar_3_3 bfs_state \<equiv> 
+  (\<forall>v\<in>t_set (visited bfs_state).
+     neighbourhood (Graph.digraph_abs G) v \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state))"
+
+definition "invar_3_4 bfs_state \<equiv> 
+  (\<forall>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state).
+     \<forall>u. distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
+           distance_set (Graph.digraph_abs G) (t_set srcs) v
+             \<longrightarrow> u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state))"
+
+definition "invar_goes_through_current bfs_state \<equiv> 
+         (\<forall>u\<in>t_set (visited bfs_state) \<union> t_set (current bfs_state). 
+            \<forall>v. v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state) \<longrightarrow>
+              (\<forall>p. Vwalk.vwalk_bet (Graph.digraph_abs G) u p v \<longrightarrow> 
+                     set p \<inter> t_set (current bfs_state) \<noteq> {}))"
+
+definition "invar_dist' bfs_state \<equiv> 
+  (\<forall>v \<in> dVs (Graph.digraph_abs G) - t_set srcs.
+     (v \<in> (t_set (visited bfs_state) \<union> t_set (current bfs_state)) \<longrightarrow> distance_set (Graph.digraph_abs G) (t_set srcs) v =
+         distance_set (Graph.digraph_abs (parents bfs_state)) (t_set srcs) v))"
+
+definition "invar_parents_shortest_paths bfs_state \<equiv> 
+  (\<forall>u\<in>t_set srcs.
+      \<forall> p v. Vwalk.vwalk_bet (Graph.digraph_abs (parents bfs_state)) u p v \<longrightarrow>
+         length p - 1 = distance_set (Graph.digraph_abs G) (t_set srcs) v)"
+
+definition "call_1_measure_1 BFS_state\<equiv>
+  card (dVs (Graph.digraph_abs G) - ((t_set (visited BFS_state)) \<union> t_set (current BFS_state)))"
+
+definition "call_1_measure_2 BFS_state \<equiv>
+  card (t_set (current BFS_state))"
+
+definition
+  "BFS_term_rel' \<equiv> call_1_measure_1 <*mlex*> call_1_measure_2 <*mlex*> {}"
+
+definition "initial_state \<equiv> \<lparr>parents =  empty, current = srcs, visited = \<emptyset>\<^sub>N\<rparr>"
+
+
+context
+  includes Graph.adj.automation Graph.neighb.set.automation set_ops.automation
+  assumes BFS_axiom  
+begin
+
+lemma graph_inv[simp]:
+     "Graph.graph_inv G" 
+     "Graph.finite_graph G"
+     "Graph.finite_neighbs" and
+   srcs_in_G[simp,intro]: 
+     "t_set srcs \<subseteq> dVs (Graph.digraph_abs G)" and
+   finite_neighb:
+     "finite (Pair_Graph.neighbourhood (Graph.digraph_abs G) u)" and
+  srcs_invar[simp]:
+     "t_set srcs \<noteq> {}" 
+     "neighb_inv srcs"
+  using \<open>BFS_axiom\<close>
+  by (auto simp: BFS_axiom_def)
+
+named_theorems call_cond_elims
+named_theorems call_cond_intros
+named_theorems ret_holds_intros
+named_theorems invar_props_intros
+named_theorems invar_props_elims
+named_theorems invar_holds_intros
+named_theorems state_rel_intros
+named_theorems state_rel_holds_intros
+
+
+lemma DFS_call_1_conds[call_cond_elims]: 
+  "BFS_call_1_conds bfs_state \<Longrightarrow> 
+   \<lbrakk>(current bfs_state) \<noteq> \<emptyset>\<^sub>N \<Longrightarrow> P\<rbrakk>
+   \<Longrightarrow> P"
+  by(auto simp: BFS_call_1_conds_def split: list.splits option.splits if_splits)
+
+
+lemma BFS_ret_1_conds[call_cond_elims]:
+  "BFS_ret_1_conds bfs_state \<Longrightarrow> 
+   \<lbrakk>(current bfs_state) = \<emptyset>\<^sub>N \<Longrightarrow> P\<rbrakk>
+   \<Longrightarrow> P"
+  by(auto simp: BFS_ret_1_conds_def split: list.splits option.splits if_splits)
+
+lemma BFS_ret_1_condsI[call_cond_intros]:
+  "\<lbrakk>(current bfs_state) = \<emptyset>\<^sub>N\<rbrakk> \<Longrightarrow> BFS_ret_1_conds bfs_state"
+  by(auto simp: BFS_ret_1_conds_def split: list.splits option.splits if_splits)
+
+lemma BFS_cases:
+  assumes "BFS_call_1_conds bfs_state \<Longrightarrow> P"
+      "BFS_ret_1_conds bfs_state \<Longrightarrow> P"
+  shows "P"
+proof-
+  have "BFS_call_1_conds bfs_state \<or>
+        BFS_ret_1_conds bfs_state"
+    by (auto simp add: BFS_call_1_conds_def
+                        BFS_ret_1_conds_def
+           split: list.split_asm option.split_asm if_splits)
+  then show ?thesis
+    using assms
+    by auto
+qed
+
+lemma BFS_simps:
+  assumes "BFS_dom BFS_state" 
+  shows"BFS_call_1_conds BFS_state \<Longrightarrow> BFS BFS_state = BFS (BFS_upd1 BFS_state)"
+      "BFS_ret_1_conds BFS_state \<Longrightarrow> BFS BFS_state = BFS_ret1 BFS_state"
+  by (auto simp add: BFS.psimps[OF assms]
+                     BFS_call_1_conds_def BFS_upd1_def 
+                     BFS_ret_1_conds_def Let_def
+            split: list.splits option.splits if_splits)
+
+lemma BFS_induct: 
+  assumes "BFS_dom bfs_state"
+  assumes "\<And>bfs_state. \<lbrakk>BFS_dom bfs_state;
+                        (BFS_call_1_conds bfs_state \<Longrightarrow> P (BFS_upd1 bfs_state))\<rbrakk>
+              \<Longrightarrow> P bfs_state"
+  shows "P bfs_state"
+  apply(rule BFS.pinduct)
+  subgoal using assms(1) .
+  apply(rule assms(2))
+  by (auto simp add: BFS_call_1_conds_def BFS_upd1_def Let_def
+           split: list.splits option.splits if_splits)
+
+lemma BFS_domintros: 
+  assumes "BFS_call_1_conds BFS_state \<Longrightarrow> BFS_dom (BFS_upd1 BFS_state)"
+  shows "BFS_dom BFS_state"
+proof(rule BFS.domintros, goal_cases)
+  case (1)
+  then show ?case
+    using assms(1)[simplified BFS_call_1_conds_def BFS_upd1_def]
+    by (force simp: Let_def split: list.splits option.splits if_splits)
+qed
+
+lemma invar_1_props[invar_props_elims]: 
+  "invar_1 bfs_state \<Longrightarrow> 
+  (\<lbrakk>neighb_inv (visited bfs_state) ; neighb_inv (current bfs_state) ;
+    Graph.graph_inv (parents bfs_state); 
+    finite (t_set (current bfs_state)); finite (t_set (visited bfs_state))\<rbrakk> \<Longrightarrow> P)
+     \<Longrightarrow> P"
+  by (auto simp: invar_1_def)
+
+lemma invar_1_intro[invar_props_intros]:
+  "\<lbrakk>neighb_inv (visited bfs_state); neighb_inv (current bfs_state);
+    Graph.graph_inv (parents bfs_state);
+    finite (t_set (current bfs_state)); finite (t_set (visited bfs_state))\<rbrakk> 
+    \<Longrightarrow> invar_1 bfs_state"
+  by (auto simp: invar_1_def)
+
+lemma finite_simp:
+   "{(u,v). u \<in> front \<and> v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u) \<and> v \<notin> vis} = 
+       {(u,v). u \<in> front} \<inter> {(u,v). v \<in> (Pair_Graph.neighbourhood (Graph.digraph_abs G) u)} - {(u,v) . v \<in> vis}"
+   "finite {(u, v)| v . v \<in> (s u)} = finite (s u)"
+  using finite_image_iff[where f = snd and A = "{(u, v) |v. v \<in> s u}"]
+  by (auto simp: inj_on_def image_def)
+  
+lemma invar_1_holds_upd1[invar_holds_intros]:
+  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state\<rbrakk> \<Longrightarrow> invar_1 (BFS_upd1 bfs_state)"
+  using finite_neighb
+  by(auto elim!: invar_1_props call_cond_elims simp: Let_def BFS_upd1_def BFS_call_1_conds_def intro!: invar_props_intros)+
+
+lemma invar_1_holds_ret_1[invar_holds_intros]:
+  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_1 bfs_state\<rbrakk> \<Longrightarrow> invar_1 (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+lemma invar_1_holds[invar_holds_intros]:
+   assumes "BFS_dom bfs_state" "invar_1 bfs_state"
+   shows "invar_1 (BFS bfs_state)"
+  using assms(2-)
+proof(induction rule: BFS_induct[OF assms(1)])
+  case IH: (1 bfs_state)
+  show ?case
+    apply(rule BFS_cases[where bfs_state = bfs_state])
+    by (auto intro!: IH(2-) intro: invar_holds_intros  simp: BFS_simps[OF IH(1)])
+qed
+
+lemma invar_2_props[invar_props_elims]: 
+  "invar_2 bfs_state \<Longrightarrow> 
+  (\<lbrakk>Graph.digraph_abs (parents bfs_state) \<subseteq> Graph.digraph_abs G;
+    t_set (visited bfs_state) \<subseteq> dVs (Graph.digraph_abs G);
+    t_set (current bfs_state) \<subseteq> dVs (Graph.digraph_abs G);
+    dVs (Graph.digraph_abs (parents bfs_state)) \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state);
+    t_set srcs \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> P)
+     \<Longrightarrow> P"
+  by (auto simp: invar_2_def)
+
+lemma invar_2_intro[invar_props_intros]:
+   "\<lbrakk>Graph.digraph_abs (parents bfs_state) \<subseteq> Graph.digraph_abs G;
+     t_set (visited bfs_state) \<subseteq> dVs (Graph.digraph_abs G);
+     t_set (current bfs_state) \<subseteq> dVs (Graph.digraph_abs G);
+     dVs (Graph.digraph_abs (parents bfs_state)) \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state);
+     t_set srcs \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk>
+     \<Longrightarrow> invar_2 bfs_state"
+  by (auto simp: invar_2_def)
+
+lemma invar_2_holds_upd1[invar_holds_intros]: 
+  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state\<rbrakk> \<Longrightarrow> invar_2 (BFS_upd1 bfs_state)"
+  apply(auto elim!: call_cond_elims invar_1_props invar_2_props intro!: invar_props_intros simp: BFS_upd1_def Let_def)
+  apply(auto simp: dVs_def)
+  apply (metis Un_iff dVsI(1) dVs_def in_mono)
+  by (metis Un_iff dVsI(2) dVs_def in_mono)
+
+lemma invar_2_holds_ret_1[invar_holds_intros]:
+  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_2 bfs_state\<rbrakk> \<Longrightarrow> invar_2 (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+lemma invar_2_holds[invar_holds_intros]:
+   assumes "BFS_dom bfs_state" "invar_1 bfs_state" "invar_2 bfs_state"
+   shows "invar_2 (BFS bfs_state)"
+  using assms(2-)
+proof(induction rule: BFS_induct[OF assms(1)])
+  case IH: (1 bfs_state)
+  show ?case
+    apply(rule BFS_cases[where bfs_state = bfs_state])
+    by (auto intro!: IH(2-) intro: invar_holds_intros  simp: BFS_simps[OF IH(1)])
+qed
+
+\<comment> \<open>This is invar\_100 on the board\<close>
+
+lemma invar_3_1_props[invar_props_elims]: 
+  "invar_3_1 bfs_state \<Longrightarrow>
+  (\<lbrakk>\<lbrakk>v \<in> t_set (current bfs_state); u \<in> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
+            distance_set (Graph.digraph_abs G) (t_set srcs) v =
+                 distance_set (Graph.digraph_abs G) (t_set srcs) u;
+    \<lbrakk>v \<in> t_set (current bfs_state);
+            distance_set (Graph.digraph_abs G) (t_set srcs) v = 
+              distance_set (Graph.digraph_abs G) (t_set srcs) u\<rbrakk> \<Longrightarrow>
+            u \<in> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> P)
+     \<Longrightarrow> P"
+  unfolding invar_3_1_def
+  by blast
+
+lemma invar_3_1_intro[invar_props_intros]:
+   "\<lbrakk>\<And>u v. \<lbrakk>v \<in> t_set (current bfs_state); u \<in> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
+            distance_set (Graph.digraph_abs G) (t_set srcs) v =
+                           distance_set (Graph.digraph_abs G) (t_set srcs) u;
+     \<And>u v. \<lbrakk>v \<in> t_set (current bfs_state); distance_set (Graph.digraph_abs G) (t_set srcs) v =
+                 distance_set (Graph.digraph_abs G) (t_set srcs) u\<rbrakk> \<Longrightarrow>
+            u \<in> t_set (current bfs_state)\<rbrakk>
+    \<Longrightarrow> invar_3_1 bfs_state"
+  unfolding invar_3_1_def
+  by blast
+
+lemma invar_3_2_props[elim]: 
+  "invar_3_2 bfs_state \<Longrightarrow> 
+  (\<lbrakk>\<And>v u. \<lbrakk>v\<in>t_set (current bfs_state); u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
+          distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
+       distance_set (Graph.digraph_abs G) (t_set srcs) v\<rbrakk> \<Longrightarrow> P)
+     \<Longrightarrow> P"
+  unfolding invar_3_2_def
+  by blast
+
+lemma invar_3_2_intro[invar_props_intros]:
+   "\<lbrakk>\<And>v u. \<lbrakk>v\<in>t_set (current bfs_state); u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
+          distance_set (Graph.digraph_abs G) (t_set srcs) u \<le>
+       distance_set (Graph.digraph_abs G) (t_set srcs) v\<rbrakk>
+    \<Longrightarrow> invar_3_2 bfs_state"
+  unfolding invar_3_2_def
+  by blast
+
+lemma invar_3_3_props[invar_props_elims]: 
+  "invar_3_3 bfs_state \<Longrightarrow> 
+  (\<lbrakk>\<And>v. \<lbrakk>v \<in> t_set (visited bfs_state)\<rbrakk> \<Longrightarrow>
+          neighbourhood (Graph.digraph_abs G) v \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> P)
+     \<Longrightarrow> P"
+  unfolding invar_3_3_def
+  by blast
+
+lemma invar_3_3_intro[invar_props_intros]:
+   "\<lbrakk>\<And>v. \<lbrakk>v \<in> t_set (visited bfs_state)\<rbrakk> \<Longrightarrow>
+          neighbourhood (Graph.digraph_abs G) v \<subseteq> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk>
+    \<Longrightarrow> invar_3_3 bfs_state"
+  unfolding invar_3_3_def
+  by blast
+
+\<comment> \<open>This is invar 4 on the board\<close>
+
+
+lemma invar_3_4_props[invar_props_elims]: 
+  "invar_3_4 bfs_state \<Longrightarrow> 
+  (\<lbrakk>\<And>u v. \<lbrakk>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state);
+             distance_set (Graph.digraph_abs G) (t_set srcs) u \<le> distance_set (Graph.digraph_abs G) (t_set srcs) v\<rbrakk> \<Longrightarrow>
+            u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> P)
+     \<Longrightarrow> P"
+  unfolding invar_3_4_def
+  by blast
+
+lemma invar_3_4_intro[invar_props_intros]:
+   "\<lbrakk>\<And>u v. \<lbrakk>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state);
+               distance_set (Graph.digraph_abs G) (t_set srcs) u \<le> distance_set (Graph.digraph_abs G) (t_set srcs) v\<rbrakk> \<Longrightarrow>
+            u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk>
+    \<Longrightarrow> invar_3_4 bfs_state"
+  unfolding invar_3_4_def
+  by blast
+
+definition "invar_current_reachable bfs_state \<equiv> 
+  (\<forall>v\<in> t_set (visited bfs_state) \<union> t_set (current bfs_state).
+     distance_set (Graph.digraph_abs G) (t_set srcs) v < \<infinity>)"
+
+lemma invar_current_reachable_props[invar_props_elims]: 
+  "invar_current_reachable bfs_state \<Longrightarrow> 
+  (\<lbrakk>\<And>v. \<lbrakk>v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> 
+         distance_set (Graph.digraph_abs G) (t_set srcs) v < \<infinity>\<rbrakk> \<Longrightarrow> P)
+     \<Longrightarrow> P"
+  by(auto simp: invar_current_reachable_def)
+
+lemma invar_current_reachable_intro[invar_props_intros]:
+   "\<lbrakk>\<And>v. \<lbrakk>v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow>
+         distance_set (Graph.digraph_abs G) (t_set srcs) v < \<infinity>\<rbrakk> 
+    \<Longrightarrow> invar_current_reachable bfs_state"
+  by(auto simp add: invar_current_reachable_def)
+
+lemma invar_current_reachable_holds_upd1[invar_holds_intros]: 
+  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state; invar_current_reachable bfs_state\<rbrakk>
+     \<Longrightarrow> invar_current_reachable (BFS_upd1 bfs_state)"
+proof(rule invar_props_intros, goal_cases)
+  case assms: (1 v)
+  have ?case (is "?dist v < \<infinity>") if "v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
+  proof-
+    have "v \<in> t_set (current (BFS_upd1 bfs_state))"
+      using that assms
+      by (auto simp: BFS_upd1_def Let_def elim: invar_props_elims)
+    then obtain u where "v \<in> t_set (\<N>\<^sub>G u)" "u \<in> t_set (current bfs_state)"
+      using assms
+      by (auto simp: BFS_upd1_def Let_def elim!: invar_props_elims)
+    hence "?dist u < \<infinity>"
+      using \<open>invar_2 bfs_state\<close> \<open>invar_current_reachable bfs_state\<close>
+      by (auto elim!: invar_props_elims)
+    hence "?dist v \<le> ?dist u + 1"
+      using \<open>v \<in> t_set (\<N>\<^sub>G u)\<close>
+      by (auto intro!: distance_set_neighbourhood)
+    thus ?thesis
+      using add_mono1[OF \<open>?dist u < \<infinity>\<close>] linorder_not_less
+      by fastforce
+  qed
+  thus ?case
+    using assms
+    by(force elim!: call_cond_elims invar_props_elims intro!: invar_props_intros simp: BFS_upd1_def Let_def)
+qed
+
+lemma invar_current_reachable_holds_ret_1[invar_holds_intros]:
+  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_current_reachable bfs_state\<rbrakk> \<Longrightarrow> invar_current_reachable (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+lemma dist_current_plus_1_new:                                               
+  assumes
+    "invar_1 bfs_state" "invar_2 bfs_state" "invar_3_4 bfs_state" 
+    "v \<in> neighbourhood (Graph.digraph_abs G) v'" 
+    "v' \<in> t_set (current bfs_state)"
+    "v \<in> t_set (current (BFS_upd1 bfs_state))"
+  shows  "distance_set (Graph.digraph_abs G) (t_set srcs) v = 
+            distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1" (is "?dv = ?dv' + 1")
+  proof-
+    have False if "?dv > ?dv' + 1"
+      using distance_set_neighbourhood[OF \<open>v \<in> neighbourhood (Graph.digraph_abs G) v'\<close>] that
+      by (simp add: leD)
+
+
+    moreover have False if "?dv < ?dv' + 1"
+    proof-
+      have "?dv \<le> ?dv'"
+        using that eSuc_plus_1 ileI1
+        by force
+      moreover have "?dv \<noteq> \<infinity>"
+        using that enat_ord_simps(4) 
+        by fastforce
+      moreover have "v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
+        using assms
+        by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props invar_2_props)
+        
+      moreover have "v' \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
+        using \<open>v' \<in> t_set (current bfs_state)\<close> \<open>invar_2 bfs_state\<close>
+        by (auto elim!: invar_2_props)
+
+      ultimately show False
+        using \<open>invar_3_4 bfs_state\<close>
+        apply(elim invar_props_elims)
+        apply(drule dist_set_not_inf)
+        using dual_order.trans dist_set_mem
+        by (smt (verit, best))
+    qed
+    ultimately show ?thesis
+      by force
+  qed
+
+lemma plus_lt_enat: "\<lbrakk>(a::enat) \<noteq> \<infinity>; b < c\<rbrakk> \<Longrightarrow> a + b < a + c"
+  using enat_add_left_cancel_less
+  by presburger
+
+lemma plus_one_side_lt_enat: "\<lbrakk>(a::enat) \<noteq> \<infinity>; 0 < b\<rbrakk> \<Longrightarrow> a < a + b"
+  using plus_lt_enat
+  by auto
+
+lemma invar_3_1_holds_upd1_new[invar_holds_intros]: 
+  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state ; invar_3_1 bfs_state;
+    invar_3_2 bfs_state; invar_3_4 bfs_state; invar_current_reachable bfs_state\<rbrakk>
+     \<Longrightarrow> invar_3_1 (BFS_upd1 bfs_state)"
+proof(intro invar_props_intros, goal_cases)
+  case assms: (1 u v)
+  obtain u' v' where
+    uv'[intro]: "u \<in> neighbourhood (Graph.digraph_abs G) u'" "u' \<in> t_set (current bfs_state)" 
+                "v \<in> neighbourhood (Graph.digraph_abs G) v'" "v' \<in> t_set (current bfs_state)"
+    using assms(1,2,8,9)    
+    by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props)
+  moreover hence "distance_set (Graph.digraph_abs G) (t_set srcs) v' =
+                    distance_set (Graph.digraph_abs G) (t_set srcs) u'" (is "?d v' = ?d u'")
+    using \<open>invar_3_1 bfs_state\<close>
+    by (auto elim: invar_props_elims)
+  moreover have "distance_set (Graph.digraph_abs G) (t_set srcs) v = ?d v' + 1"
+    using assms               
+    by (auto intro!: dist_current_plus_1_new)
+  moreover have "distance_set (Graph.digraph_abs G) (t_set srcs) u = ?d u' + 1"
+    using assms
+    by (auto intro!: dist_current_plus_1_new)
+  ultimately show ?case
+    by auto
+next
+  case (2 u v)
+  then obtain v' where uv'[intro]:
+    "v \<in> neighbourhood (Graph.digraph_abs G) v'" "v' \<in> t_set (current bfs_state)"    
+    by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props invar_2_props)
+  hence "distance_set (Graph.digraph_abs G) (t_set srcs) v = 
+           distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1" (is "?d v = ?d v' + _")
+    using 2
+    by(fastforce intro!: dist_current_plus_1_new)
+
+  show ?case
+  proof(cases "0 < ?d u")
+    case in_srcs: True
+    moreover have "?d v' < \<infinity>"
+      using \<open>?d v = ?d u\<close> \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close> \<open>v' \<in> t_set (current bfs_state)\<close>
+            \<open>invar_current_reachable bfs_state\<close>
+      by (auto elim!: invar_1_props invar_2_props invar_current_reachable_props)
+    hence "?d v < \<infinity>"
+      using \<open>?d v = ?d v' + 1\<close>
+      by (simp add: plus_eq_infty_iff_enat)
+    hence "?d u < \<infinity>"
+      using \<open>?d v = ?d u\<close>
+      by auto
+    ultimately obtain u' where "?d u' + 1 = ?d u" "u \<in> neighbourhood (Graph.digraph_abs G) u'"
+      using distance_set_parent'
+      by (metis srcs_invar(1))
+    hence "?d u' = ?d v'"
+      using \<open>?d v = ?d v' + 1\<close> \<open>?d v = ?d u\<close>
+      by auto
+    hence "u' \<in> t_set (current bfs_state)"
+      using \<open>invar_3_1 bfs_state\<close>
+            \<open>v' \<in> t_set (current bfs_state)\<close>
+      by (auto elim!: invar_3_1_props)
+    moreover have "?d u' < ?d u"
+      using \<open>?d u < \<infinity>\<close> 
+      using zero_less_one not_infinity_eq 
+      by (fastforce intro!: plus_one_side_lt_enat simp: \<open>?d u' + 1 = ?d u\<close>[symmetric])
+    hence "u \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
+      using \<open>invar_3_2 bfs_state\<close> \<open>u' \<in> t_set (current bfs_state)\<close> 
+      by (auto elim!: invar_3_2_props dest: leD)
+    ultimately show ?thesis
+      using \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close> \<open>u \<in> neighbourhood (Graph.digraph_abs G) u'\<close>
+      apply(auto simp: BFS_upd1_def Let_def elim!: invar_1_props invar_2_props)
+      by blast
+  next
+    case not_in_srcs: False
+    text \<open>Contradiction because if \<open>u \<in> srcs\<close> then distance srcs to a vertex in srcs is > 0. This is
+          because the distance from srcs to \<open>u\<close> is the same as that to \<open>v\<close>.\<close>
+    then show ?thesis
+      using \<open>?d v = ?d u\<close> \<open>?d v = ?d v' + 1\<close>
+      by auto
+  qed
+qed
+
+lemma invar_3_1_holds_ret_1[invar_holds_intros]:
+  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_3 bfs_state\<rbrakk> \<Longrightarrow> invar_3_3 (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+lemma invar_3_2_holds_upd1_new[invar_holds_intros]: 
+  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state ; invar_3_1 bfs_state; 
+    invar_3_2 bfs_state; invar_3_4 bfs_state; invar_current_reachable bfs_state\<rbrakk>
+   \<Longrightarrow> invar_3_2 (BFS_upd1 bfs_state)"
+proof(intro invar_props_intros, goal_cases)                                                                          
+  case assms: (1 u v)
+  show ?case
+  proof(cases "v \<in> t_set (current (BFS_upd1 bfs_state))")
+    case v_in_current: True
+    moreover have "invar_3_1 (BFS_upd1 bfs_state)"
+      using assms
+      by (auto intro: invar_holds_intros)
+    ultimately show ?thesis
+      using \<open>u \<in> t_set (current (BFS_upd1 bfs_state))\<close>
+      by (fastforce elim: invar_props_elims)
+  next                     
+    case v_not_in_current: False
+    hence "v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
+      using assms(1,2,9)
+      by (fastforce simp: BFS_upd1_def Let_def elim!: invar_1_props)
+    moreover obtain u' where uv'[intro]: "u \<in> neighbourhood (Graph.digraph_abs G) u'" "u' \<in> t_set (current bfs_state)" 
+      using assms(1,2,8,9)    
+      by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props)
+    ultimately have "distance_set (Graph.digraph_abs G) (t_set srcs) v \<le>
+                       distance_set (Graph.digraph_abs G) (t_set srcs) u'"
+      using \<open>invar_3_2 bfs_state\<close>
+      by (auto elim!: invar_3_2_props)
+    moreover have "distance_set (Graph.digraph_abs G) (t_set srcs) u = 
+           distance_set (Graph.digraph_abs G) (t_set srcs) u' + 1" (is "?d u = ?d u' + _")
+      using assms
+      by(fastforce intro!: dist_current_plus_1_new)
+    ultimately show ?thesis
+      by (metis le_iff_add order.trans)
+  qed
+qed
+
+lemma invar_3_2_holds_ret_1[invar_holds_intros]:
+  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_3 bfs_state\<rbrakk> \<Longrightarrow> invar_3_3 (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+lemma invar_3_3_holds_upd1[invar_holds_intros]: 
+  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state; invar_3_3 bfs_state\<rbrakk> \<Longrightarrow> invar_3_3 (BFS_upd1 bfs_state)"
+  by(fastforce elim!: call_cond_elims invar_1_props invar_2_props invar_3_3_props intro!: invar_props_intros simp: BFS_upd1_def Let_def)
+
+lemma invar_3_3_holds_ret_1[invar_holds_intros]:
+  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_3 bfs_state\<rbrakk> \<Longrightarrow> invar_3_3 (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+lemma invar_3_4_holds_upd1[invar_holds_intros]: 
+  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state;
+    invar_3_1 bfs_state; invar_3_2 bfs_state; invar_3_3 bfs_state; invar_3_4 bfs_state;
+    invar_current_reachable bfs_state\<rbrakk> \<Longrightarrow> 
+    invar_3_4 (BFS_upd1 bfs_state)"
+proof(intro invar_props_intros, goal_cases)                                                                                                    
+  case assms: (1 u v)
+  show ?case
+  proof(cases \<open>v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<close>)
+    case v_visited: True
+    hence "u \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)"
+      using \<open>invar_3_4 bfs_state\<close> assms
+      by (auto elim!: invar_3_4_props)
+    then show ?thesis 
+      using \<open>invar_1 bfs_state\<close> \<open>v \<in> t_set (visited (BFS_upd1 bfs_state)) \<union> t_set (current (BFS_upd1 bfs_state))\<close>
+      by (auto simp: BFS_upd1_def Let_def elim: invar_props_elims)
+  next
+    case v_not_visited: False
+    hence "v \<in> t_set (current (BFS_upd1 bfs_state))"
+      using \<open>invar_1 bfs_state\<close> \<open>v \<in> t_set (visited (BFS_upd1 bfs_state)) \<union> t_set (current (BFS_upd1 bfs_state))\<close>
+      by (auto simp: BFS_upd1_def Let_def elim: invar_props_elims)
+    then obtain v' where v'[intro]:
+      "v \<in> neighbourhood (Graph.digraph_abs G) v'" "v' \<in> t_set (current bfs_state)"
+      using \<open>invar_1 bfs_state\<close>
+      by (auto simp: BFS_upd1_def Let_def elim!: invar_1_props)
+    have "distance_set (Graph.digraph_abs G) (t_set srcs) v = 
+            distance_set (Graph.digraph_abs G) (t_set srcs) v' + 1" (is "?dv = ?dv' + 1")
+      using assms \<open>v \<in> t_set (current (BFS_upd1 bfs_state))\<close>
+      by (auto intro!: dist_current_plus_1_new)
+    moreover have "u \<in> t_set (visited (BFS_upd1 bfs_state)) \<union> t_set (current (BFS_upd1 bfs_state))"
+      if "distance_set (Graph.digraph_abs G) (t_set srcs) u \<le> ?dv'" (is "?du \<le> ?dv'")
+      using that \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close> \<open>invar_3_4 bfs_state\<close> 
+      by (fastforce simp: BFS_upd1_def Let_def elim!: invar_1_props invar_2_props invar_3_4_props)
+    moreover have "u \<in> t_set (visited (BFS_upd1 bfs_state)) \<union> t_set (current (BFS_upd1 bfs_state))"
+      if "distance_set (Graph.digraph_abs G) (t_set srcs) u = ?dv"
+    proof-
+      have "invar_3_1 (BFS_upd1 bfs_state)"
+        by (auto intro: assms invar_holds_intros)
+      hence "u \<in> t_set (current (BFS_upd1 bfs_state))"
+        using that \<open>invar_3_1 bfs_state\<close> \<open>v \<in> t_set (current (BFS_upd1 bfs_state))\<close>
+        by (auto elim!: invar_3_1_props)
+      moreover have "invar_1 (BFS_upd1 bfs_state)" "invar_2 (BFS_upd1 bfs_state)"
+        using \<open>BFS_call_1_conds bfs_state\<close> \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close>
+        by(auto intro!: invar_1_holds_upd1 invar_2_holds_upd1)
+      ultimately show ?thesis
+        by (auto elim!: invar_props_elims)
+    qed
+    ultimately show ?thesis
+      using \<open>?du \<le> ?dv\<close> ileI1 linorder_not_less plus_1_eSuc(2)
+      by fastforce
+  qed
+qed
+
+lemma invar_3_4_holds_ret_1[invar_holds_intros]:
+  "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_4 bfs_state\<rbrakk> \<Longrightarrow> invar_3_4 (BFS_ret1 bfs_state)"
+  by (auto simp: intro: invar_props_intros)
+
+                                      
+lemma invar_dist'_props[invar_props_elims]: 
+  "invar_dist' bfs_state \<Longrightarrow> v \<in> dVs (Graph.digraph_abs G) - t_set srcs \<Longrightarrow> 
+   \<lbrakk>
+     \<lbrakk>v \<in> (t_set (visited bfs_state) \<union> t_set (current bfs_state)) \<Longrightarrow> distance_set (Graph.digraph_abs G) (t_set srcs) v =
+         distance_set (Graph.digraph_abs (parents bfs_state)) (t_set srcs) v\<rbrakk> \<Longrightarrow> P
+   \<rbrakk>
+   \<Longrightarrow> P"
+  unfolding invar_dist'_def
+  by auto
+
+lemma invar_dist'_intro[invar_props_intros]:
+   "\<lbrakk>\<And>v. \<lbrakk>v \<in> dVs (Graph.digraph_abs G) - t_set srcs; v \<in> t_set (visited bfs_state) \<union> t_set (current bfs_state)\<rbrakk> \<Longrightarrow> 
+           (distance_set (Graph.digraph_abs G) (t_set srcs) v =
+             distance_set (Graph.digraph_abs (parents bfs_state)) (t_set srcs) v)\<rbrakk>
+        
+    \<Longrightarrow> invar_dist' bfs_state"
+  unfolding invar_dist'_def
+  by auto
+
+lemma invar_goes_through_current_props[invar_props_elims]: 
+  "invar_goes_through_current  bfs_state \<Longrightarrow> 
+   \<lbrakk>\<lbrakk>\<And>u v p. \<lbrakk>u \<in>t_set (visited bfs_state) \<union> t_set (current bfs_state);
+              v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state); 
+              Vwalk.vwalk_bet (Graph.digraph_abs G) u p v\<rbrakk>
+      \<Longrightarrow> set p \<inter> t_set (current bfs_state) \<noteq> {}\<rbrakk>
+     \<Longrightarrow> P\<rbrakk>
+   \<Longrightarrow> P"
+  unfolding invar_goes_through_current_def
+  by auto
+
+lemma invar_goes_through_current_intro[invar_props_intros]:
+  "\<lbrakk>\<And>u v p. \<lbrakk>u \<in>t_set (visited bfs_state) \<union> t_set (current bfs_state);
+             v \<notin> t_set (visited bfs_state) \<union> t_set (current bfs_state); 
+              Vwalk.vwalk_bet (Graph.digraph_abs G) u p v\<rbrakk>
+      \<Longrightarrow> set p \<inter> t_set (current bfs_state) \<noteq> {}\<rbrakk>
+    \<Longrightarrow> invar_goes_through_current bfs_state"
+  unfolding invar_goes_through_current_def
+  by auto
 
 lemma invar_goes_through_active_holds_upd1[invar_holds_intros]: 
   "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state; 
@@ -945,7 +934,7 @@ qed
 qed
 
 
-lemma invar_goes_through_current_holds_4[invar_holds_intros]:
+lemma invar_goes_through_current_holds_ret_1[invar_holds_intros]:
   "\<lbrakk>BFS_ret_1_conds bfs_state; invar_goes_through_current bfs_state\<rbrakk> \<Longrightarrow> invar_goes_through_current (BFS_ret1 bfs_state)"
   by (auto simp: intro: invar_props_intros)
 
@@ -962,8 +951,8 @@ proof(induction rule: BFS_induct[OF assms(1)])
 qed
 
 lemma invar_dist'_holds_upd1_new[invar_holds_intros]: 
-  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state; invar_3_1 bfs_state;
-    invar_3_2 bfs_state; invar_3_4 bfs_state; invar_dist' bfs_state\<rbrakk> 
+  "\<lbrakk>BFS_call_1_conds bfs_state; invar_1 bfs_state; invar_2 bfs_state;
+    invar_3_4 bfs_state; invar_dist' bfs_state\<rbrakk> 
     \<Longrightarrow> invar_dist' (BFS_upd1 bfs_state)"
 proof(intro invar_props_intros, goal_cases)
   define bfs_state' where "bfs_state' \<equiv> BFS_upd1 bfs_state"
@@ -1101,7 +1090,7 @@ proof(intro invar_props_intros, goal_cases)
   qed
 qed
 
-lemma invar_dist'_holds_4[invar_holds_intros]:
+lemma invar_dist'_holds_ret_1[invar_holds_intros]:
   "\<lbrakk>BFS_ret_1_conds bfs_state; invar_dist' bfs_state\<rbrakk> \<Longrightarrow> invar_dist' (BFS_ret1 bfs_state)"
   by (auto simp: intro: invar_props_intros)
 
@@ -1140,7 +1129,7 @@ lemma invar_current_no_out_holds_upd1[invar_holds_intros]:
   apply blast+
   done
 
-lemma invar_current_no_out_holds_4[invar_holds_intros]:
+lemma invar_current_no_out_holds_ret_1[invar_holds_intros]:
   "\<lbrakk>BFS_ret_1_conds bfs_state; invar_current_no_out bfs_state\<rbrakk> \<Longrightarrow> invar_current_no_out (BFS_ret1 bfs_state)"
   by (auto simp: intro: invar_props_intros)
 
@@ -1154,11 +1143,6 @@ proof(induction rule: BFS_induct[OF assms(1)])
     apply(rule BFS_cases[where bfs_state = bfs_state])
     by (auto intro!: IH(2-) intro: invar_holds_intros  simp: BFS_simps[OF IH(1)])
 qed
-
-definition "invar_parents_shortest_paths bfs_state \<equiv> 
-  (\<forall>u\<in>t_set srcs.
-      \<forall> p v. Vwalk.vwalk_bet (Graph.digraph_abs (parents bfs_state)) u p v \<longrightarrow>
-         length p - 1 = distance_set (Graph.digraph_abs G) (t_set srcs) v)"
  
 lemma invar_parents_shortest_paths_props[invar_props_elims]: 
   "invar_parents_shortest_paths bfs_state \<Longrightarrow> 
@@ -1194,21 +1178,6 @@ proof(intro invar_props_intros, goal_cases)
   have "invar_current_no_out bfs_state'"
     using assms 
     by(auto intro: invar_holds_intros simp: bfs_state'_def)
-(*
-  have *: "t_set (current bfs_state')=
-              dVs (Graph.digraph_abs (parents bfs_state')) -
-                   (t_set (current bfs_state) \<union>
-                    dVs (Graph.digraph_abs (parents bfs_state)))"
-    using \<open>invar_1 bfs_state\<close> \<open>invar_2 bfs_state\<close> dVsI
-    apply(auto simp: bfs_state'_def dVs_def BFS_upd1_def Let_def
-        elim!: invar_1_props invar_2_props)
-    apply blast
-    apply (metis insertI1)
-    apply (metis insertI1)
-    apply (meson insertI1 insert_commute)+
-    apply auto[1]
-    by (meson insertI1 insert_commute)
-*)
 
   have **: "u \<in> t_set (current bfs_state') \<or> v \<in> t_set (current bfs_state')"
     if "(u,v) \<in> (Graph.digraph_abs (parents bfs_state')) -
@@ -1308,50 +1277,6 @@ proof(intro invar_props_intros, goal_cases)
             ultimately show ?case
               using that no_outgoing_v''
               by auto
-
-(*          next
-            case (2 v'')
-            hence "v'' \<in> t_set (current bfs_state') \<union> t_set (current bfs_state)"
-              using * ** \<open>invar_2 bfs_state'\<close>
-              apply (subst (asm) bfs_state'_def[symmetric])
-              by (auto simp: elim!: invar_props_elims)
-            thus ?case
-            proof(safe, goal_cases)
-              case 1
-              moreover hence no_outgoing_v'': "(v'',u'') \<notin> Graph.digraph_abs (parents bfs_state')" for u''
-                using \<open>invar_current_no_out bfs_state'\<close> 
-                by (auto elim: invar_props_elims)
-              hence "last (p' @ [v']) = v''"
-                using \<open>vwalk_bet (Graph.digraph_abs (parents (BFS_upd1 bfs_state))) u (p' @ [v']) v'\<close>[simplified bfs_state'_def[symmetric]]
-                apply (auto dest: v_in_edge_in_vwalk elim!: vwalk_bet_props intro!: no_outgoing_last)
-                 apply (metis "2"(2) last_snoc no_outgoing_last v_in_edge_in_vwalk(2))
-                by (metis "2"(2) last_snoc no_outgoing_last v_in_edge_in_vwalk(2))
-              hence "v' = v''"
-                by auto
-              moreover have "(v',v) \<in> Graph.digraph_abs (parents bfs_state')"
-                using \<open>p = p' @ [v', v]\<close> assms(8)
-                by (fastforce simp: bfs_state'_def [symmetric] dest: split_vwalk)
-              ultimately show ?case
-                using no_outgoing_v''
-                by auto
-            next
-              case in_old_current: 2
-              moreover hence no_outgoing_v'': "(v'',u'') \<notin> Graph.digraph_abs (parents bfs_state)" for u''
-                using \<open>invar_current_no_out bfs_state\<close> 
-                by (auto elim: invar_props_elims)
-              hence "last (p' @ [v']) = v''"
-                using \<open>vwalk_bet (Graph.digraph_abs (parents (BFS_upd1 bfs_state))) u (p' @ [v']) v'\<close>[simplified bfs_state'_def[symmetric]]
-                apply (auto dest: v_in_edge_in_vwalk elim!: vwalk_bet_props intro!: no_outgoing_last)
-
-              hence "v' = v''"
-                by auto
-              moreover have "(v',v) \<in> Graph.digraph_abs (parents bfs_state')"
-                using \<open>p = p' @ [v', v]\<close> assms(8)
-                by (fastforce simp: bfs_state'_def [symmetric] dest: split_vwalk)
-              ultimately show ?case
-                using no_outgoing_v''
-                by auto
-            qed*)
           qed
         qed
         hence "length (p' @ [v']) - 1 = distance_set (Graph.digraph_abs G) (t_set srcs) v'"
@@ -1395,7 +1320,7 @@ proof(intro invar_props_intros, goal_cases)
             by (auto elim: invar_props_elims)
           hence "last p = v'"
             using \<open>vwalk_bet (Graph.digraph_abs (parents (BFS_upd1 bfs_state))) u p v\<close>[simplified bfs_state'_def[symmetric]]
-              \<open>u' \<rightarrow>\<^bsub>set (edges_of_vwalk p)\<^esub>v'\<close>
+              \<open>(u',v') \<in> set (edges_of_vwalk p)\<close>
             by (auto dest: v_in_edge_in_vwalk elim!: vwalk_bet_props intro!: no_outgoing_last)
           hence "v' = v"
             using \<open>vwalk_bet (Graph.digraph_abs (parents (BFS_upd1 bfs_state))) u p v\<close>
@@ -1404,26 +1329,6 @@ proof(intro invar_props_intros, goal_cases)
             using v_visited \<open>invar_1 bfs_state\<close>
             by (auto simp: bfs_state'_def BFS_upd1_def Let_def elim: invar_props_elims)
         qed
-(*      next
-          case (2 v')
-          hence "v' \<in> t_set (current bfs_state')"
-            using * ** \<open>invar_2 bfs_state'\<close>
-            by (auto simp: bfs_state'_def[symmetric])
-          moreover hence "(v',u') \<notin> Graph.digraph_abs (parents bfs_state')" for u'
-            using \<open>invar_current_no_out bfs_state'\<close> 
-            by (auto elim: invar_props_elims)
-          hence "last p = v'"
-            using \<open>vwalk_bet (Graph.digraph_abs (parents (BFS_upd1 bfs_state))) u p v\<close>[simplified bfs_state'_def[symmetric]]
-              \<open>v' \<in> set p\<close>
-            by (auto intro!: no_outgoing_last)
-          hence "v' = v"
-            using \<open>vwalk_bet (Graph.digraph_abs (parents (BFS_upd1 bfs_state))) u p v\<close>
-            by auto
-          ultimately show ?case
-            using v_visited \<open>invar_1 bfs_state\<close>
-            by (auto simp: bfs_state'_def BFS_upd1_def Let_def elim: invar_props_elims)
-        qed
-*)
       qed
       then show ?thesis
         using \<open>invar_parents_shortest_paths bfs_state\<close> \<open>u \<in> t_set srcs\<close>
@@ -1436,9 +1341,7 @@ proof(intro invar_props_intros, goal_cases)
     by fastforce
 qed
 
-
-
-lemma invar_parents_shortest_paths_holds_4[invar_holds_intros]:
+lemma invar_parents_shortest_paths_holds_ret_1[invar_holds_intros]:
   "\<lbrakk>BFS_ret_1_conds bfs_state; invar_parents_shortest_paths bfs_state\<rbrakk> \<Longrightarrow> 
      invar_parents_shortest_paths (BFS_ret1 bfs_state)"
   by (auto simp: intro: invar_props_intros)
@@ -1511,12 +1414,6 @@ lemma wf_less_rel[intro!]: "wf less_rel"
 
 definition "state_measure_rel call_measure \<equiv> inv_image less_rel call_measure"
 
-definition "call_1_measure_1 \<equiv>
-  \<lambda>BFS_state. card (dVs (Graph.digraph_abs G) - ((t_set (visited BFS_state)) \<union> t_set (current BFS_state)))"
-
-definition "call_1_measure_2 \<equiv>
-  \<lambda>BFS_state. card (t_set (current BFS_state))"
-
 lemma call_1_measure_nonsym[simp]:
   "(call_1_measure_1 BFS_state, call_1_measure_1 BFS_state) \<notin> less_rel"
   by (auto simp: less_rel_def)
@@ -1545,12 +1442,13 @@ proof(cases "t_set (next_frontier (current BFS_state) (visited BFS_state \<union
           intro: mlex_less)
 next
   case False
-  have *: "{{v1, v2} |v1 v2. v1 \<rightarrow>\<^bsub>Graph.digraph_abs G\<^esub>v2}
+  have *: "{{v1, v2} |v1 v2. (v1, v2) \<in> [G]\<^sub>g}
                  \<subseteq> (\<lambda>(x,y). {x,y} ) ` ({v. \<exists>y. lookup G v = Some y} \<times>
                                         (\<Union> {t_set N | v N. lookup G v = Some N}))"
+    including Graph.adj.automation Graph.neighb.set.automation
     apply (auto simp: Graph.digraph_abs_def Graph.neighbourhood_def image_def
                 split: option.splits)
-    by (metis Graph.graph_invE Graph.neighb.set_isin graph_inv(1))
+    by (metis Graph.graph_invE Graph.neighb.set.set_isin graph_inv(1))
   moreover have "{uu. \<exists>v N. uu = t_set N \<and> lookup G v = Some N} = 
                    ((t_set o the o (lookup G)) ` {v | N v. lookup G v = Some N})"
     by (force simp: image_def)
@@ -1559,7 +1457,7 @@ next
     apply(subst (asm) Graph.finite_neighbs_def )
     by (auto simp: Graph.finite_graph_def Graph.graph_inv_def
              split: option.splits)
-  ultimately have "finite {{v1, v2} |v1 v2. v1 \<rightarrow>\<^bsub>Graph.digraph_abs G\<^esub>v2}"
+  ultimately have "finite {{v1, v2} |v1 v2. (v1,v2) \<in> [G]\<^sub>g}"
     using graph_inv(2)
     by (auto simp: Graph.finite_graph_def intro!: finite_subset[OF *])
   moreover have "finite {neighbourhood (Graph.digraph_abs G) u |u. u \<in> t_set (current BFS_state)}"
@@ -1595,9 +1493,6 @@ next
     by(auto intro!: mlex_less psubset_card_mono)
 qed  
 
-definition
-  "BFS_term_rel' \<equiv> call_1_measure_1 <*mlex*> call_1_measure_2 <*mlex*> {}"
-
 lemma wf_term_rel: "wf BFS_term_rel'"
   by(auto simp: wf_mlex BFS_term_rel'_def)
 
@@ -1616,16 +1511,6 @@ proof(induction rule: wf_induct_rule)
     apply (rule BFS_domintros)
     by (auto intro: invar_holds_intros intro!: termination_intros less)
 qed
-
-definition "initial_state \<equiv> \<lparr>parents =  empty, current = srcs, visited = \<emptyset>\<^sub>N\<rparr>"
-
-end
-
-lemma not_vwalk_bet_empty: "\<not> Vwalk.vwalk_bet {} u p v"
-  by (auto simp: vwalk_bet_def neq_Nil_conv split: if_splits)
-
-context BFS
-begin
 
 lemma not_vwalk_bet_empty[simp]: "\<not> Vwalk.vwalk_bet (Graph.digraph_abs empty) u p v"
   using not_vwalk_bet_empty
@@ -1682,7 +1567,6 @@ proof-
 
   show "invar_goes_through_current initial_state"
     by (auto simp add: initial_state_def dest:  hd_of_vwalk_bet'' intro!: invar_props_intros)
-
 qed
 
 lemma BFS_correct_1:
@@ -1703,6 +1587,8 @@ lemma BFS_correct_3:
          \<Longrightarrow> length p - 1 = distance_set (Graph.digraph_abs G) (t_set srcs) v"
   apply(intro BFS_correct_3_ret_1[where bfs_state = "BFS initial_state"])
   by(auto intro: invar_holds_intros ret_holds_intros)
+
+end text \<open>context\<close>
 
 end text \<open>locale @{const BFS}\<close>
 
@@ -2014,7 +1900,7 @@ proof(intro invar_props_intros, goal_cases)
   qed
 qed
 
-lemma invar_3_4'_holds_4[invar_holds_intros]:
+lemma invar_3_4'_holds_ret_1[invar_holds_intros]:
   "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_4' bfs_state\<rbrakk> \<Longrightarrow> invar_3_4' (BFS_ret1 bfs_state)"
   by (auto simp: intro: invar_props_intros)
 
@@ -2404,7 +2290,7 @@ proof(intro invar_props_intros, goal_cases)
   qed
 qed
 
-lemma invar_3_4_holds_4[invar_holds_intros]:
+lemma invar_3_4_holds_ret_1[invar_holds_intros]:
   "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_4 bfs_state\<rbrakk> \<Longrightarrow> invar_3_4 (BFS_ret1 bfs_state)"
   by (auto simp: intro: invar_props_intros)
 *)
@@ -2429,7 +2315,7 @@ lemma invar_forest_holds_upd1[invar_holds_intros]:
   apply(auto simp: dVs_def)
   done
 
-lemma invar_forest_holds_4[invar_holds_intros]:
+lemma invar_forest_holds_ret_1[invar_holds_intros]:
   "\<lbrakk>BFS_ret_1_conds bfs_state; invar_forest bfs_state\<rbrakk> \<Longrightarrow> invar_forest (BFS_ret1 bfs_state)"
   by (auto simp: intro: invar_props_intros)
 
@@ -2556,7 +2442,7 @@ next
   qed
 qed
 
-lemma invar_3_1'_holds_4[invar_holds_intros]:
+lemma invar_3_1'_holds_ret_1[invar_holds_intros]:
   "\<lbrakk>BFS_ret_1_conds bfs_state; invar_3_3 bfs_state\<rbrakk> \<Longrightarrow> invar_3_3 (BFS_ret1 bfs_state)"
   by (auto simp: intro: invar_props_intros)
 

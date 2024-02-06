@@ -4,11 +4,13 @@ theory Pair_Graph
     Graph_Theory.Rtrancl_On
 begin
 
-text \<open>Theory about digraphs represented as a set of pairs (and an implicit vertex set)\<close>
+text \<open>Graphs are a fundamental structure in computer science and mathematics.\<close>
 
 type_synonym 'a dgraph = "('a \<times> 'a) set"
 
-definition "dVs dG \<equiv> \<Union> {{v1,v2} | v1 v2. (v1, v2) \<in> dG}"
+definition "dVs G \<equiv> \<Union> {{v1,v2} | v1 v2. (v1, v2) \<in> G}"
+
+(*<*)
 
 lemma induct_pcpl:
   "\<lbrakk>P []; \<And>x. P [x]; \<And>x y zs. P zs \<Longrightarrow> P (x # y # zs)\<rbrakk> \<Longrightarrow> P xs"
@@ -59,11 +61,6 @@ proof
   qed
 qed
 
-(*TODO: remove notation*)
-
-abbreviation dominates :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<index>_" [100,100] 40) where
-  "dominates E u v \<equiv> (u,v) \<in> E"
-
 abbreviation reachable1 :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" ("_ \<rightarrow>\<^sup>+\<index> _" [100,100] 40) where
   "reachable1 E u v \<equiv> (u,v) \<in> E\<^sup>+"
 
@@ -71,7 +68,7 @@ definition reachable :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a 
   "reachable E u v \<equiv> (u,v) \<in> rtrancl_on (dVs E) E"
 
 lemma reachableE[elim?]:
-  assumes "u \<rightarrow>\<^bsub>E\<^esub> v"
+  assumes "(u,v) \<in> E"
   obtains e where "e \<in> E" "e = (u, v)"
   using assms by auto
 
@@ -84,21 +81,21 @@ lemma reachable_trans[trans,intro]:
   assumes "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v" "v \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w" shows "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> w"
   using assms unfolding reachable_def by (rule rtrancl_on_trans)
 
-lemma reachable_edge[dest,intro]: "u \<rightarrow>\<^bsub>E\<^esub> v \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+lemma reachable_edge[dest,intro]: "(u,v) \<in> E \<Longrightarrow> u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
   unfolding reachable_def
   by (auto intro!: rtrancl_consistent_rtrancl_on)
 
 lemma reachable_induct[consumes 1, case_names base step]:
   assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
     and cases: "\<lbrakk>u \<in> dVs E\<rbrakk> \<Longrightarrow> P u"
-      "\<And>x y. \<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> x; x \<rightarrow>\<^bsub>E\<^esub> y; P x\<rbrakk> \<Longrightarrow> P y"
+      "\<And>x y. \<lbrakk>u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> x; (x,y) \<in> E; P x\<rbrakk> \<Longrightarrow> P y"
   shows "P v"
   using assms unfolding reachable_def by (rule rtrancl_on_induct)
 
 lemma converse_reachable_induct[consumes 1, case_names base step, induct pred: reachable]:
   assumes major: "u \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
     and cases: "v \<in> dVs E \<Longrightarrow> P v"
-      "\<And>x y. \<lbrakk>x \<rightarrow>\<^bsub>E\<^esub> y; y \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v; P y\<rbrakk> \<Longrightarrow> P x"
+      "\<And>x y. \<lbrakk>(x,y) \<in> E; y \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v; P y\<rbrakk> \<Longrightarrow> P x"
     shows "P u"
   using assms unfolding reachable_def by (rule converse_rtrancl_on_induct)
 
@@ -130,7 +127,8 @@ lemma reachable_neq_reachable1[intro]:
 
 lemmas reachable_neq_reachable1E[elim] = reachable_neq_reachable1[elim_format]
 
-lemma arc_implies_dominates: "e \<in> E \<Longrightarrow> fst e \<rightarrow>\<^bsub>E\<^esub> snd e" by auto
+lemma arc_implies_dominates: "e \<in> E \<Longrightarrow> (fst e, snd e) \<in> E" by auto
+(*>*)
 
 definition "neighbourhood G u = {v. (u,v) \<in> G}"
 

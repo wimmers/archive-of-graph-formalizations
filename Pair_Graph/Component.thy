@@ -45,8 +45,8 @@ lemma subgraph_trans:
 
 lemma adj_mono:
   fixes H G :: "'a dgraph"
-  assumes "u \<rightarrow>\<^bsub>H\<^esub> v" "subgraph H G"
-  shows "u \<rightarrow>\<^bsub>G\<^esub> v"
+  assumes "(u,v) \<in> H" "subgraph H G"
+  shows "(u,v) \<in> G"
   using assms
   by auto
 
@@ -158,7 +158,7 @@ next
     by force
   ultimately have "Vwalk.vwalk_bet (G::'a dgraph) x (x#p') w"
                   "set (x#p') \<subseteq> {w | w . x \<rightarrow>\<^sup>*\<^bsub>G::'a dgraph\<^esub> w}"
-    using \<open>x \<rightarrow>\<^bsub>G\<^esub> y\<close>
+    using \<open>(x,y) \<in> G\<close>
     by (auto simp: vwalk_bet_def intro!: Vwalk.vwalkI dVsI(1))
   thus ?case
     using step.prems
@@ -173,8 +173,8 @@ lemma induce_reachable_preserves_paths:
 
 lemma dominates_induce_subgraphD:
   fixes G :: "'a dgraph"
-  assumes "u \<rightarrow>\<^bsub>G \<downharpoonright> S\<^esub> v"
-  shows "u \<rightarrow>\<^bsub>G\<^esub> v"
+  assumes "(u,v) \<in> G \<downharpoonright> S"
+  shows "(u,v) \<in> G"
   using assms subgraph_def subgraph_induce_subgraph by auto
 
 lemma induce_subgraph_mono:
@@ -190,7 +190,7 @@ lemma reachable_induce_subgraphD:
 
 lemma dominates_induce_ss:
   fixes G :: "'a dgraph"
-  assumes "u \<rightarrow>\<^bsub>G \<downharpoonright> S\<^esub> v" "S \<subseteq> T"
+  assumes "(u,v) \<in> G \<downharpoonright> S" "S \<subseteq> T"
   shows "u \<rightarrow>\<^sup>*\<^bsub>G \<downharpoonright> T\<^esub> v"
   using assms
   by (auto simp: induce_subgraph_def)

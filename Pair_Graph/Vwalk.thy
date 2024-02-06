@@ -2,11 +2,11 @@ theory Vwalk
   imports Pair_Graph
 begin
 
-context fixes dG :: "'a dgraph" begin
+context fixes G :: "'a dgraph" begin
 inductive vwalk where
   vwalk0: "vwalk []" |
-  vwalk1: "v \<in> dVs dG \<Longrightarrow> vwalk [v]" |
-  vwalk2: "(v,v') \<in> dG \<Longrightarrow> vwalk (v'#vs) \<Longrightarrow> vwalk (v#v'#vs)"
+  vwalk1: "v \<in> dVs G \<Longrightarrow> vwalk [v]" |
+  vwalk2: "(v,v') \<in> G \<Longrightarrow> vwalk (v'#vs) \<Longrightarrow> vwalk (v#v'#vs)"
 end
 declare vwalk0[simp]
 
@@ -14,7 +14,7 @@ inductive_simps vwalk_1[simp]: "vwalk E [v]"
 
 inductive_simps vwalk_2[simp]: "vwalk E (v # v' # vs)"
 
-definition "vwalk_bet dG v p v' \<equiv> vwalk dG p \<and> p \<noteq> [] \<and> hd p = v \<and> last p = v'"
+definition "vwalk_bet G v p v' \<equiv> vwalk G p \<and> p \<noteq> [] \<and> hd p = v \<and> last p = v'"
 
 lemma vwalk_then_edge: "vwalk_bet dG v p v' \<Longrightarrow> v \<noteq> v' \<Longrightarrow> (\<exists>v''. (v, v'') \<in> dG)"
   by(cases p; auto split: if_splits simp: neq_Nil_conv vwalk_bet_def)
@@ -485,13 +485,13 @@ lemma reachable1_vwalk:
   assumes "u \<rightarrow>\<^sup>+\<^bsub>E\<^esub> v"
   shows "\<exists>p. vwalk E (u # p @ [v])"
 proof -
-  from assms obtain w where "u \<rightarrow>\<^bsub>E\<^esub> w" "w \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
+  from assms obtain w where "(u,w) \<in> E" "w \<rightarrow>\<^sup>*\<^bsub>E\<^esub> v"
     by (meson converse_tranclE reachable1_in_dVs(2) reachable1_reachable reachable_refl)
   from reachable_vwalk[OF this(2)] obtain p where *: "hd p = w" "last p = v" "vwalk E p" "p \<noteq> []"
     by auto
   then obtain p' where [simp]: "p = p' @ [v]"
     by (auto intro!: append_butlast_last_id[symmetric])
-  with \<open>u \<rightarrow>\<^bsub>E\<^esub> w\<close> * show ?thesis
+  with \<open>(u,w) \<in> E\<close> * show ?thesis
     by (auto intro: vwalkI)
 qed
 
@@ -1125,5 +1125,8 @@ lemma vwalk_bet_props:
 lemma no_outgoing_last:
   "\<lbrakk>vwalk G p; \<And>v. (u,v) \<notin> G; u \<in> set p\<rbrakk> \<Longrightarrow> last p = u"
   by(induction rule: vwalk.induct) (auto simp: dVs_def)
+
+lemma not_vwalk_bet_empty: "\<not> Vwalk.vwalk_bet {} u p v"
+  by (auto simp: vwalk_bet_def neq_Nil_conv split: if_splits)
 
 end
